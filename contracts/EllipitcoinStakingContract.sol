@@ -27,6 +27,10 @@ contract EllipitcoinStakingContract {
     }
   }
 
+  function balanceOf(address _owner) public view returns (uint256) {
+    return balances[_owner];
+  }
+
   function totalStake() public view returns (uint _totalStake){
     for(uint i = 0; i < addresses.length; i++) {
       _totalStake += balances[addresses[i]];
