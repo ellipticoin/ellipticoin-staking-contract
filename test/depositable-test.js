@@ -1,7 +1,7 @@
 const _ = require("lodash");
 const web3 = require("web3");
 const Depositable = artifacts.require("./Depositable.sol");
-const TestToken = artifacts.require("./TestToken.sol");
+const TestToken = artifacts.require("./test/TestToken.sol");
 const {
   mint,
   deposit,
@@ -16,7 +16,7 @@ contract('Depositable', (accounts) => {
   beforeEach(async () => {
     token = await TestToken.new();
     contract = await Depositable.new(token.address)
-  })
+  });
 
   describe("#totalStake", () => {
     it("sums the deposits", async () => {

@@ -1,10 +1,9 @@
 const ERC20 = artifacts.require("zeppelin-solidity/contracts/token/ERC20/MintableToken.sol");
 const _ = require("lodash");
 const mint = async (token, balances, accounts) => {
-  await Promise.all(_.map(balances, async (value, account) =>
+  return await Promise.all(_.map(balances, async (value, account) =>
     token.mint(account, value)
   ));
-  return await token.finishMinting();
 }
 
 const deposit = async (contract, from, amount) => {
