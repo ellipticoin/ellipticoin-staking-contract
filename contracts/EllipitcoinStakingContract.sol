@@ -1,13 +1,12 @@
 pragma solidity ^0.4.23;
-// import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./TestToken.sol";
+import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract EllipitcoinStakingContract {
-  TestToken public token; 
+  ERC20 public token; 
   address[] public addresses;
   mapping(address => uint) public balances;
 
-  constructor(TestToken _token) public {
+  constructor(ERC20 _token) public {
     token = _token;
   }
 

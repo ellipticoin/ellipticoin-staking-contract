@@ -13,7 +13,7 @@ contract('EllipitcoinStakingContract', (accounts) => {
   })
 
   describe("#totalStake", () => {
-    it("sums deposits", async () => {
+    it("sums the deposits", async () => {
       await token.mint(accounts[0], 2);
       await token.mint(accounts[1], 3);
       await token.finishMinting();
