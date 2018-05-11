@@ -8,12 +8,12 @@ contract('EllipitcoinStakingContract', (accounts) => {
   let token;
 
   beforeEach(async () => {
-    token = await TestToken.deployed();
+    token = await TestToken.new();
     contract = await EllipitcoinStakingContract.new(token.address)
   })
 
-  describe.only("#totalStake", () => {
-    it("increases when deposits are made", async () => {
+  describe("#totalStake", () => {
+    it("sums deposits", async () => {
       await token.mint(accounts[0], 2);
       await token.mint(accounts[1], 3);
       await token.finishMinting();
@@ -35,6 +35,55 @@ contract('EllipitcoinStakingContract', (accounts) => {
       });
 
       assert.equal((await contract.totalStake.call()).toNumber(), 5);
+    });
+  });
+
+  describe("#deposit", () => {
+    it("increases the user's balance", async () => {
+      await token.mint(accounts[0], 2);
+      await token.finishMinting();
+      await token.approve(contract.address, 2, {
+        from: accounts[0],
+      });
+      await contract.deposit(2, {
+        from: accounts[0],
+      });
+      assert.equal((await contract.balances.call(accounts[0])).toNumber(), 2);
+    });
+  });
+
+  describe("#withdraw", () => {
+    it("decreases the user's balance", async () => {
+      await token.mint(accounts[0], 5);
+      await token.finishMinting();
+      await token.approve(contract.address, 5, {
+        from: accounts[0],
+      });
+      await contract.deposit(5, {
+        from: accounts[0],
+      });
+
+      await contract.withdraw(2, {
+        from: accounts[0],
+      });
+      assert.equal((await contract.balances.call(accounts[0])).toNumber(), 3);
+      assert.equal((await token.balanceOf(accounts[0])).toNumber(), 2);
+    });
+
+    it("removes the user if their balance is 0", async () => {
+      await token.mint(accounts[0], 5);
+      await token.finishMinting();
+      await token.approve(contract.address, 5, {
+        from: accounts[0],
+      });
+      await contract.deposit(5, {
+        from: accounts[0],
+      });
+
+      await contract.withdraw(5, {
+        from: accounts[0],
+      });
+      assert.equal((await contract.addressesLength()).toNumber(), 0);
     });
   });
 });
