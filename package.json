@@ -26,6 +26,7 @@
   "homepage": "https://github.com/ellipticoin/ellipticoin-staking-contract#readme",
   "dependencies": {
     "lodash": "^4.17.10",
+    "truffle": "git://github.com/trufflesuite/truffle.git#web3-one",
     "web3": "^1.0.0-beta.34"
   },
   "devDependencies": {

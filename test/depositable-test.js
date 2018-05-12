@@ -9,7 +9,7 @@ const {
   withdraw,
 } = require("./utils.js");
 
-contract('Depositable', (accounts) => {
+contract("Depositable", (accounts) => {
   let contract;
   let token;
 
