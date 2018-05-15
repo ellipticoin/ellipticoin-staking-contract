@@ -17,22 +17,30 @@ const deposit = async (contract, from, amount) => {
   });
 }
 
-const encodeSignature = (signature) => [
+const bytes64ToBytes32Array = (signature) => [
   bytesToHex(signature.slice(0, 32)),
   bytesToHex(signature.slice(32, 64)),
 ]
 
 
 const mint = async (token, balances, accounts) => {
-  return await Promise.all(_.map(balances, async (value, account) =>
-    token.mint(account, value)
+  return await Promise.all(_.map(balances, async (value, account) => {
+    if(typeof account == "number") {
+      return token.mint(accounts[account].address, value)
+    } else {
+      return token.mint(account, value)
+    }
+  }
   ));
 }
 
-const sign = (web3, address, message) => {
-  let signature = web3.eth.sign(address, message);
-  return new Buffer(signature.slice(2, -2), "hex");
+const sign = (account, message, {privateKey}) => {
+  return signatureToBytes(account.sign(bytesToHex(message), privateKey));
 }
+
+const signatureToBytes = ({signature}) =>
+  new Buffer(signature.slice(2, -2), "hex");
+
 const callLastSignature = async (contract) => {
   return Buffer.concat([
     Buffer((await contract.lastSignature.call(0)).slice(2), "hex"),
@@ -49,9 +57,10 @@ module.exports = {
   balanceOf,
   bytesToHex,
   deposit,
-  encodeSignature,
+  bytes64ToBytes32Array,
   mint,
   sign,
+  signatureToBytes,
   callLastSignature,
   withdraw,
 }
