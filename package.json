@@ -2,7 +2,6 @@
   "name": "ellipticoin-staking-contract",
   "version": "0.1.0",
   "description": "The Ellipitcoin Staking Contract",
-  "main": "truffle.js",
   "directories": {
     "test": "test"
   },
@@ -26,12 +25,12 @@
   "homepage": "https://github.com/ellipticoin/ellipticoin-staking-contract#readme",
   "dependencies": {
     "lodash": "^4.17.10",
-    "truffle": "git://github.com/trufflesuite/truffle.git",
-    "web3": "^1.0.0-beta.34",
-    "web3-eth-accounts": "^1.0.0-beta.34"
+    "truffle": "^4.1.8"
   },
   "devDependencies": {
     "bluebird": "^3.5.1",
-    "zeppelin-solidity": "^1.9.0"
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "openzeppelin-solidity": "github:OpenZeppelin/openzeppelin-solidity"
   }
 }

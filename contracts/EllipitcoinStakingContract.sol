@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 pragma experimental ABIEncoderV2;
-import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Depositable.sol";
 
 contract EllipitcoinStakingContract is Depositable {
@@ -12,6 +12,7 @@ contract EllipitcoinStakingContract is Depositable {
   }
 
   function submitBlock(bytes32 blockHash, bytes32[2] signature) public {
+    require(msg.sender == winner());
     latestBlockHash = blockHash;
     lastSignature = signature;
   }
