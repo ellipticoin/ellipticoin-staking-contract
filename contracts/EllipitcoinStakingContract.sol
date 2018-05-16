@@ -15,4 +15,17 @@ contract EllipitcoinStakingContract is Depositable {
     latestBlockHash = blockHash;
     lastSignature = signature;
   }
+
+  function winner() public view returns (address) {
+    uint randomUint = (uint(lastSignature[0]) + uint(lastSignature[1]));
+    uint winningValue = randomUint % totalStake();
+    uint value = 0;
+    uint i = 0;
+    do {
+      value += balanceOf(addresses[i]);
+      i += 1;
+    } while (value < winningValue);
+
+    return addresses[i - 1];
+  }
 }

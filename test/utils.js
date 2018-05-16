@@ -24,21 +24,15 @@ const bytes64ToBytes32Array = (signature) => [
 
 
 const mint = async (token, balances, accounts) => {
-  return await Promise.all(_.map(balances, async (value, account) => {
-    if(typeof account == "number") {
-      return token.mint(accounts[account].address, value)
-    } else {
-      return token.mint(account, value)
-    }
-  }
-  ));
+  return await Promise.all(_.map(balances, async (value, account) =>
+    token.mint(account, value))
+  );
 }
 
-const sign = (account, message, {privateKey}) => {
-  return signatureToBytes(account.sign(bytesToHex(message), privateKey));
-}
+const sign = (web3, address, message) =>
+  signatureToBytes(web3.eth.sign(address, bytesToHex(message)));
 
-const signatureToBytes = ({signature}) =>
+const signatureToBytes = (signature) =>
   new Buffer(signature.slice(2, -2), "hex");
 
 const callLastSignature = async (contract) => {
