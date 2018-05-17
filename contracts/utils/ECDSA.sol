@@ -8,6 +8,15 @@ contract ECDSA {
     bytes32 s;
   }
 
+  function verify(address _address, bytes32 _bytes ,Signature signature) pure returns(bool){
+    return ecrecover(
+      _bytes,
+      signature.v,
+      signature.r,
+      signature.s
+    ) == _address;
+  }
+
   function signatureToBytes(Signature signature) pure returns (bytes){
     bytes memory byteArray;
     byteArray = new bytes(65);

@@ -27,7 +27,6 @@ const {
   bytesToHex,
   deposit,
   mint,
-  sign,
   signatureToVRS,
   signatureToHex,
   callLastSignature,
@@ -49,6 +48,24 @@ contract("EllipitcoinStakingContract", (accounts) => {
   });
 
   describe("#submitBlock", () => {
+    it("fails if the signature is incorrect", async () => {
+      await mint(token, {
+          [accounts[0]]: 100,
+      }, accounts);
+      await deposit(contract, accounts[0], 100);
+
+      let invalidSignature = bytesToHex(new Buffer(65));
+
+      await assert.isRejected(
+        contract.submitBlock.call(
+          dummyBlockHashes[0],
+          ...signatureToVRS(web3, invalidSignature), {
+            from: accounts[0],
+          }),
+          "revert",
+        );
+    });
+
     it("fails if the sender isn't the winner of this block", async () => {
       await mint(token, {
           [accounts[0]]: 100,
@@ -58,9 +75,8 @@ contract("EllipitcoinStakingContract", (accounts) => {
       await deposit(contract, accounts[0], 100);
       await deposit(contract, accounts[1], 100);
       await deposit(contract, accounts[2], 100);
-
       let lastSignature = await contract.lastSignature();
-      let signature = sign(web3, accounts[0], signatureToHex(lastSignature));
+      let signature = web3.eth.sign(accounts[0], signatureToHex(lastSignature));
 
       // The winner of the first block in our tests is
       // accounts[0] so signing with accounts[1] should fail
@@ -82,7 +98,7 @@ contract("EllipitcoinStakingContract", (accounts) => {
 
       let winner = await contract.winner();
       let lastSignature = await contract.lastSignature();
-      let signature = sign(web3, winner, signatureToHex(lastSignature));
+      let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
 
       await contract.submitBlock(
         dummyBlockHashes[0],
@@ -101,7 +117,7 @@ contract("EllipitcoinStakingContract", (accounts) => {
 
       let winner = await contract.winner();
       let lastSignature = await contract.lastSignature();
-      let signature = sign(web3, winner, signatureToHex(lastSignature));
+      let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
 
       await contract.submitBlock(
         dummyBlockHashes[0],
@@ -133,15 +149,13 @@ contract("EllipitcoinStakingContract", (accounts) => {
         let winner = await contract.winner();
         let lastSignature = await contract.lastSignature();
 
-        let signature = sign(web3, winner, signatureToHex(lastSignature));
+        let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
 
-        // console.log(signatureToHex(signature))
         await contract.submitBlock(
           dummyBlockHashes[0],
           ...signatureToVRS(web3, signature), {
             from: winner,
         });
-        // console.log(await contract.lastSignature())
 
         return winner;
       });
