@@ -28,12 +28,13 @@ const {
   deposit,
   mint,
   sign,
-  signatureToBytes,
+  signatureToVRS,
+  signatureToHex,
   callLastSignature,
   withdraw,
   expectThrow,
 } = require("./utils.js");
-const randomSeed = new Buffer(64);
+const randomSeed = new Buffer(32);
 
 contract("EllipitcoinStakingContract", (accounts) => {
   let contract;
@@ -43,7 +44,7 @@ contract("EllipitcoinStakingContract", (accounts) => {
     token = await TestToken.new();
     contract = await EllipitcoinStakingContract.new(
       token.address,
-      bytes64ToBytes32Array(randomSeed)
+      bytesToHex(randomSeed)
     )
   });
 
@@ -58,16 +59,16 @@ contract("EllipitcoinStakingContract", (accounts) => {
       await deposit(contract, accounts[1], 100);
       await deposit(contract, accounts[2], 100);
 
-      let lastSignature = await callLastSignature(contract);
-      let signature = sign(web3, accounts[0], lastSignature);
+      let lastSignature = await contract.lastSignature();
+      let signature = sign(web3, accounts[0], signatureToHex(lastSignature));
 
-      // Note: the winner of the first block in our tests is
+      // The winner of the first block in our tests is
       // accounts[0] so signing with accounts[1] should fail
       await assert.isRejected(
         contract.submitBlock.call(
           dummyBlockHashes[0],
-          bytes64ToBytes32Array(signature), {
-              from: accounts[1]
+          ...signatureToVRS(web3, signature), {
+            from: accounts[1],
           }),
           "revert",
         );
@@ -80,15 +81,16 @@ contract("EllipitcoinStakingContract", (accounts) => {
       await deposit(contract, accounts[0], 1);
 
       let winner = await contract.winner();
-      let lastSignature = await callLastSignature(contract);
-      let signature = sign(web3, winner, lastSignature);
+      let lastSignature = await contract.lastSignature();
+      let signature = sign(web3, winner, signatureToHex(lastSignature));
+
       await contract.submitBlock(
         dummyBlockHashes[0],
-        bytes64ToBytes32Array(signature), {
+        ...signatureToVRS(web3, signature), {
           from: winner,
         });
 
-      assert.equal(await contract.latestBlockHash.call(), dummyBlockHashes[0]);
+      assert.equal(await contract.blockHash.call(), dummyBlockHashes[0]);
     });
 
     it("sets `lastSignature` to the `signature` that was submitted", async () => {
@@ -98,16 +100,20 @@ contract("EllipitcoinStakingContract", (accounts) => {
       await deposit(contract, accounts[0], 1);
 
       let winner = await contract.winner();
-      let lastSignature = await callLastSignature(contract);
-      let signature = sign(web3, winner, lastSignature);
+      let lastSignature = await contract.lastSignature();
+      let signature = sign(web3, winner, signatureToHex(lastSignature));
+
       await contract.submitBlock(
         dummyBlockHashes[0],
-        bytes64ToBytes32Array(signature), {
+        ...signatureToVRS(web3, signature), {
           from: winner,
         }
       );
 
-      assert.deepEqual(await callLastSignature(contract), signature);
+      assert.deepEqual(
+        await contract.lastSignature(),
+        signatureToVRS(web3, signature),
+      );
     });
   });
 
@@ -125,13 +131,17 @@ contract("EllipitcoinStakingContract", (accounts) => {
 
       let winners = await Promise.mapSeries(_.range(3), async () => {
         let winner = await contract.winner();
-        let lastSignature = await callLastSignature(contract);
-        let signature = sign(web3, winner, lastSignature);
+        let lastSignature = await contract.lastSignature();
+
+        let signature = sign(web3, winner, signatureToHex(lastSignature));
+
+        // console.log(signatureToHex(signature))
         await contract.submitBlock(
           dummyBlockHashes[0],
-          bytes64ToBytes32Array(signature), {
+          ...signatureToVRS(web3, signature), {
             from: winner,
         });
+        // console.log(await contract.lastSignature())
 
         return winner;
       });

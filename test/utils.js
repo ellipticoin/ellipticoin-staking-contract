@@ -1,10 +1,12 @@
 const ERC20 = artifacts.require("openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol");
 const _ = require("lodash");
+const BigNumber = require('bignumber.js');
 
 const balanceOf = async (contract, address) =>
   await contract.balanceOf(address);
 
 const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
+const hexTobytes = (hex) => new Buffer(hex, "hex");
 
 const deposit = async (contract, from, amount) => {
   let token = ERC20.at(await contract.token.call());
@@ -29,11 +31,27 @@ const mint = async (token, balances, accounts) => {
   );
 }
 
-const sign = (web3, address, message) =>
-  signatureToBytes(web3.eth.sign(address, bytesToHex(message)));
+const sign = (web3, address, message) => {
+  // console.log(message)
+  // console.log(web3.eth.sign(address, bytesToHex(message)));
+  return web3.eth.sign(address, message);
+}
 
-const signatureToBytes = (signature) =>
-  new Buffer(signature.slice(2, -2), "hex");
+const signatureToHex = (signature) => {
+  // console.log(signature);
+  return "0x" +
+    signature[1].slice(2) +
+    signature[2].slice(2) +
+    signature[0].toString(16) + "0"
+}
+
+const signatureToVRS = (web3, signature) =>
+  [
+    web3.toBigNumber(parseInt(signature.slice(130), 16)),
+    `0x${signature.slice(2, 66)}`,
+    `0x${signature.slice(66, 130)}`,
+  ]
+
 
 const callLastSignature = async (contract) => {
   return Buffer.concat([
@@ -77,7 +95,8 @@ module.exports = {
   bytes64ToBytes32Array,
   mint,
   sign,
-  signatureToBytes,
+  signatureToVRS,
+  signatureToHex,
   callLastSignature,
   expectThrow,
   withdraw,
