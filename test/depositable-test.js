@@ -3,10 +3,12 @@ const Depositable = artifacts.require("./Depositable.sol");
 const TestToken = artifacts.require("./test/TestToken.sol");
 const {
   mint,
+} = require("./utils.js");
+const {
   deposit,
   balanceOf,
   withdraw,
-} = require("./utils.js");
+} = require("./helpers/depositable.js");
 
 contract("Depositable", (accounts) => {
   let contract;

@@ -8,13 +8,36 @@ contract ECDSA {
     bytes32 s;
   }
 
-  function verify(address _address, bytes32 _bytes ,Signature signature) pure returns(bool){
+  function verifySignature(address _address, bytes _bytes, Signature signature) pure returns(bool) {
     return ecrecover(
-      _bytes,
+      signatureHash(_bytes),
       signature.v,
       signature.r,
       signature.s
     ) == _address;
+  }
+
+  function verifyVRS(address _address, bytes _bytes, uint8 v, bytes32 r, bytes32 s) public pure returns (bool) {
+    Signature memory signature = Signature(v,r,s); 
+    return verifySignature(
+      _address,
+      _bytes,
+      signature
+    );
+  }
+
+  function signatureHash(bytes _bytes) pure returns (bytes32) {
+    bytes memory prefix = "\x19Ethereum Signed Message:\n65";
+    return keccak256(prefix, _bytes);
+  }
+
+  function recoverAddress(bytes _bytes, uint8 v, bytes32 r, bytes32 s) pure returns(address) {
+    return ecrecover(
+      signatureHash(_bytes),
+      v,
+      r,
+      s
+    );
   }
 
   function signatureToBytes(Signature signature) pure returns (bytes){

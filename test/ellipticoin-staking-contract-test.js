@@ -3,7 +3,7 @@
  * without [building the transaction yourself](https://ethereum.stackexchange.com/a/25852) so we need to test against a determisitic set of private keys by running ganache with the following arugments:
  *
  * 
- * `ganache-cli -m "scatter dilemma proud orphan riot crucial truth theory place coast attend rotate"`
+ * `ganache-cli -m "medal junk auction menu dice pony version coyote grief dream dinosaur obscure"`
  */
 const chai = require('chai')
   .use(require('chai-as-promised'))
@@ -21,18 +21,22 @@ const dummyBlockData = [
 const dummyBlockHashes = dummyBlockData.map(web3.sha3);
 
 const {
-  balanceOf,
   bytes64ToBytes32Array,
   encodeSignature,
   bytesToHex,
-  deposit,
   mint,
   signatureToVRS,
   signatureToHex,
   callLastSignature,
-  withdraw,
   expectThrow,
 } = require("./utils.js");
+
+const {
+  deposit,
+  balanceOf,
+  withdraw,
+} = require("./helpers/depositable.js");
+
 const randomSeed = new Buffer(32);
 
 contract("EllipitcoinStakingContract", (accounts) => {

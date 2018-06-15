@@ -1,23 +1,7 @@
-const ERC20 = artifacts.require("openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol");
 const _ = require("lodash");
 const BigNumber = require('bignumber.js');
-
-const balanceOf = async (contract, address) =>
-  await contract.balanceOf(address);
-
 const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
 const hexTobytes = (hex) => new Buffer(hex, "hex");
-
-const deposit = async (contract, from, amount) => {
-  let token = ERC20.at(await contract.token.call());
-  await token.approve(contract.address, amount, {
-    from,
-  });
-
-  return await contract.deposit(amount, {
-    from,
-  });
-}
 
 const bytes64ToBytes32Array = (signature) => [
   bytesToHex(signature.slice(0, 32)),
@@ -51,20 +35,11 @@ const callLastSignature = async (contract) =>
     Buffer((await contract.lastSignature.call(1)).slice(2), "hex"),
   ])
 
-
-const withdraw = async (contract, from, amount) =>
-  await contract.withdraw(amount, {
-    from,
-  })
-
 module.exports = {
-  balanceOf,
   bytesToHex,
-  deposit,
   bytes64ToBytes32Array,
   mint,
   signatureToVRS,
   signatureToHex,
   callLastSignature,
-  withdraw,
 }

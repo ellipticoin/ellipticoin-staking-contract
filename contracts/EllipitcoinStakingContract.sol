@@ -20,7 +20,7 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
   function submitBlock(bytes32 _blockHash, uint8 v, bytes32 r, bytes32 s) public {
     Signature memory signature = Signature(v,r,s); 
     require(msg.sender == winner());
-    require(verify(msg.sender, lastSignatureHash(), signature));
+    require(verifySignature(msg.sender, lastSignatureBytes(), signature));
     blockHash = _blockHash;
     lastSignature = signature;
   }
@@ -38,9 +38,7 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
     return addresses[i - 1];
   }
 
-  function lastSignatureHash() public view returns (bytes32) {
-    bytes memory prefix = "\x19Ethereum Signed Message:\n65";
-    return keccak256(prefix, lastSignature.r, lastSignature.s, lastSignature.v);
+  function lastSignatureBytes() public view returns(bytes) {
+    return signatureToBytes(lastSignature);
   }
-
 }
