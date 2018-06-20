@@ -12,6 +12,12 @@ contract Bridge {
     token.transferFrom(msg.sender, this, amount);
   }
 
+  function transfer(ERC20 token, address recipient, uint amount) public {
+    require(balances[token][msg.sender] >= amount);
+    balances[token][msg.sender] -= amount;
+    balances[token][recipient] += amount;
+  }
+
   function exit(ERC20 token, uint amount) public {
     require(balances[token][msg.sender] >= amount);
     balances[token][msg.sender] -= amount;

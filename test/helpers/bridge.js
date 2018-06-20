@@ -2,7 +2,7 @@ const ERC20 = artifacts.require("openzeppelin-solidity/contracts/token/ERC20/ERC
 const balanceOf = async (contract, token, address) =>
   await contract.balanceOf(token.address, address);
 
-const enter = async (contract, token, from, amount) => {
+const enter = async (contract, token, amount, from) => {
   await token.approve(contract.address, amount, {
     from,
   });
@@ -12,13 +12,19 @@ const enter = async (contract, token, from, amount) => {
   });
 }
 
-const exit = async (contract, token, from, amount) =>
+const transfer = async (contract, token, recipient, amount, from) =>
+  await contract.transfer(token.address, recipient, amount, {
+    from,
+  })
+
+const exit = async (contract, token, amount, from) =>
   await contract.exit(token.address, amount, {
     from,
   })
 
 module.exports = {
+  balanceOf,
   enter,
   exit,
-  balanceOf,
+  transfer,
 }

@@ -8,6 +8,7 @@ const {
 const {
   balanceOf,
   enter,
+  transfer,
   exit,
 } = require("./helpers/bridge.js");
 
@@ -26,9 +27,23 @@ contract("Bridge", (accounts) => {
           [accounts[0]]: 2,
       }, accounts);
 
-      await enter(contract, token, accounts[0], 2);
+      await enter(contract, token, 2, accounts[0]);
 
       assert.equal(await balanceOf(contract, token, accounts[0]), 2);
+    });
+  });
+
+  describe("#transfer", () => {
+    it("decreases the sender's balance", async () => {
+      mint(token, {
+          [accounts[0]]: 5,
+      }, accounts);
+
+      await enter(contract, token, 5, accounts[0]);
+      await transfer(contract, token, accounts[1], 2, accounts[0]);
+
+      assert.equal(await balanceOf(contract, token, accounts[0]), 3);
+      assert.equal(await balanceOf(contract, token, accounts[1]), 2);
     });
   });
 
@@ -38,8 +53,8 @@ contract("Bridge", (accounts) => {
           [accounts[0]]: 5,
       }, accounts);
 
-      await enter(contract, token, accounts[0], 5);
-      await exit(contract, token, accounts[0], 2);
+      await enter(contract, token, 5, accounts[0]);
+      await exit(contract, token, 2, accounts[0]);
 
       assert.equal(await balanceOf(contract, token, accounts[0]), 3);
       assert.equal(await token.balanceOf(accounts[0]), 2);
