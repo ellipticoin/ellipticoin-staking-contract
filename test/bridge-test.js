@@ -8,10 +8,7 @@ const {
 } = require("./utils.js");
 
 const {
-  balanceOf,
   enter,
-  transfer,
-  exit,
 } = require("./helpers/bridge.js");
 
 contract("Bridge", (accounts) => {
@@ -33,7 +30,7 @@ contract("Bridge", (accounts) => {
 
       await enter(contract, token, 2, alice);
 
-      assert.equal(await balanceOf(contract, token, alice), 2);
+      assert.equal(await contract.balanceOf(token.address, alice), 2);
     });
   });
 
@@ -46,8 +43,8 @@ contract("Bridge", (accounts) => {
       await enter(contract, token, 5, alice);
       await contract.transfer(token.address, alice, bob, 2)
 
-      assert.equal(await balanceOf(contract, token, alice), 3);
-      assert.equal(await balanceOf(contract, token, bob), 2);
+      assert.equal(await contract.balanceOf(token.address, alice), 3);
+      assert.equal(await contract.balanceOf(token.address, bob), 2);
     });
 
     it("inreases the recipient's balance", async () => {
@@ -58,7 +55,7 @@ contract("Bridge", (accounts) => {
       await enter(contract, token, 5, alice);
       await contract.transfer(token.address, alice, bob, 2)
 
-      assert.equal(await balanceOf(contract, token, bob), 2);
+      assert.equal(await contract.balanceOf(token.address, bob), 2);
     });
 
     it("can only be called by the owner", async () => {
@@ -81,20 +78,20 @@ contract("Bridge", (accounts) => {
       }, accounts);
 
       await enter(contract, token, 5, alice);
-      await exit(contract, token, 2, alice);
+      await contract.exit(token.address, alice, 2);
 
-      assert.equal(await balanceOf(contract, token, alice), 3);
+      assert.equal(await contract.balanceOf(token.address, alice), 3);
       assert.equal(await token.balanceOf(alice), 2);
     });
 
-    it.only("can only be called by the owner", async () => {
+    it("can only be called by the owner", async () => {
       mint(token, {
-          [bob]: 5,
+          [alice]: 5,
       }, accounts);
 
-      await enter(contract, token, 5, bob);
+      await enter(contract, token, 5, alice);
       await assertFailure(assert, () =>
-        contract.exit(token.address, 2, {
+        contract.exit(token.address, alice, 2, {
           from: bob,
         }), vmError("revert"));
     });

@@ -19,9 +19,9 @@ contract Bridge is Ownable {
     balances[token][recipient] += amount;
   }
 
-  function exit(ERC20 token, uint amount) public onlyOwner() {
-    require(balances[token][msg.sender] >= amount);
-    balances[token][msg.sender] -= amount;
+  function exit(ERC20 token, address recipient, uint amount) public onlyOwner() {
+    require(balances[token][recipient] >= amount);
+    balances[token][recipient] -= amount;
     token.approve(this, amount);
     token.transferFrom(this, msg.sender, amount);
   }
