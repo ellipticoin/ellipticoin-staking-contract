@@ -8,6 +8,17 @@ const bytes64ToBytes32Array = (signature) => [
   bytesToHex(signature.slice(32, 64)),
 ]
 
+const vmError = (message) =>
+  `VM Exception while processing transaction: ${message}`
+
+const assertFailure= async (assert, f, message) => {
+  try {
+    await f();
+  } catch (e) {
+    return assert.equal(e.message, message);
+  }
+  assert.fail(null, null, `"${message}" never thrown`);
+}
 
 const mint = async (token, balances, accounts) => {
   return await Promise.all(_.map(balances, async (value, account) =>
@@ -36,10 +47,12 @@ const callLastSignature = async (contract) =>
   ])
 
 module.exports = {
+  assertFailure,
   bytesToHex,
   bytes64ToBytes32Array,
   mint,
   signatureToVRS,
   signatureToHex,
   callLastSignature,
+  vmError,
 }

@@ -12,10 +12,8 @@ const enter = async (contract, token, amount, from) => {
   });
 }
 
-const transfer = async (contract, token, recipient, amount, from) =>
-  await contract.transfer(token.address, recipient, amount, {
-    from,
-  })
+const transfer = async (contract, token, sender, recipient, amount) =>
+  await contract.transfer(token.address, recipient, amount)
 
 const exit = async (contract, token, amount, from) =>
   await contract.exit(token.address, amount, {
