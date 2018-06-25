@@ -23,7 +23,7 @@ contract("Bridge", (accounts) => {
   });
 
   describe("#enter", () => {
-    it("increases the users balanace", async () => {
+    it("increases the users balance", async () => {
       mint(token, {
           [alice]: 2,
       }, accounts);

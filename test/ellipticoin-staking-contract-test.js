@@ -13,6 +13,7 @@ const Promise = require("bluebird");
 const _ = require("lodash");
 const EllipitcoinStakingContract = artifacts.require("./EllipitcoinStakingContract.sol");
 const TestToken = artifacts.require("./TestToken.sol");
+const ethers = require('ethers');
 
 const dummyBlockData = [
   "0x00",
@@ -45,10 +46,17 @@ contract("EllipitcoinStakingContract", (accounts) => {
 
   beforeEach(async () => {
     token = await TestToken.new();
-    contract = await EllipitcoinStakingContract.new(
+    web3Contract = await EllipitcoinStakingContract.new(
       token.address,
       bytesToHex(randomSeed)
-    )
+    );
+    var provider = new ethers.providers.Web3Provider(web3.currentProvider)
+
+    contract = new ethers.Contract(
+      web3Contract.address,
+      web3Contract.abi,
+      provider,
+    );
   });
 
   describe("#submitBlock", () => {
@@ -94,7 +102,7 @@ contract("EllipitcoinStakingContract", (accounts) => {
         );
     });
 
-    it("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {
+    it.only("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {
       await mint(token, {
           [accounts[0]]: 1,
       });
