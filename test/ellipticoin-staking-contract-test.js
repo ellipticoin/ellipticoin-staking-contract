@@ -5,21 +5,13 @@
  * 
  * `ganache-cli -m "medal junk auction menu dice pony version coyote grief dream dinosaur obscure"`
  */
-const chai = require('chai')
-  .use(require('chai-as-promised'))
-var assert = chai.assert;
-
-const Promise = require("bluebird");
-const _ = require("lodash");
-const EllipitcoinStakingContract = artifacts.require("./EllipitcoinStakingContract.sol");
-const TestToken = artifacts.require("./TestToken.sol");
-const ethers = require('ethers');
-
-const dummyBlockData = [
-  "0x00",
-];
-
-const dummyBlockHashes = dummyBlockData.map(web3.sha3);
+import Promise from "bluebird";
+import _ from "lodash";
+import Web3 from "web3";
+import chai from "chai";
+import chaiUseAsPromised from "chai-as-promised";
+chai.use(chaiUseAsPromised);
+const assert = chai.assert;
 
 const {
   bytes64ToBytes32Array,
@@ -30,149 +22,145 @@ const {
   signatureToHex,
   callLastSignature,
   expectThrow,
+  deploy,
+  setup,
 } = require("./utils.js");
-
-const {
-  deposit,
-  balanceOf,
-  withdraw,
-} = require("./helpers/depositable.js");
 
 const randomSeed = new Buffer(32);
 
-contract("EllipitcoinStakingContract", (accounts) => {
+describe("EllipitcoinStakingContract", (accounts) => {
   let contract;
+  let alice;
+  let bob;
+  let carol;
   let token;
+  let web3;
 
   beforeEach(async () => {
-    token = await TestToken.new();
-    web3Contract = await EllipitcoinStakingContract.new(
-      token.address,
+    web3 = new Web3("http://localhost:8545");
+    token = await deploy(web3, "test/TestToken.sol");
+    contract = await deploy(
+      web3,
+      "EllipitcoinStakingContract.sol",
+      token.options.address,
       bytesToHex(randomSeed)
     );
-    var provider = new ethers.providers.Web3Provider(web3.currentProvider)
-
-    contract = new ethers.Contract(
-      web3Contract.address,
-      web3Contract.abi,
-      provider,
-    );
+    [alice, bob, carol] = await web3.eth.getAccounts();
   });
 
   describe("#submitBlock", () => {
     it("fails if the signature is incorrect", async () => {
-      await mint(token, {
-          [accounts[0]]: 100,
-      }, accounts);
-      await deposit(contract, accounts[0], 100);
+      await setup(token, contract, {
+          [alice]: 100,
+      });
 
+      let blockHash = web3.utils.sha3("0x00");
       let invalidSignature = bytesToHex(new Buffer(65));
 
       await assert.isRejected(
-        contract.submitBlock.call(
-          dummyBlockHashes[0],
-          ...signatureToVRS(web3, invalidSignature), {
-            from: accounts[0],
+        contract.methods.submitBlock(
+          blockHash,
+          signatureToVRS(web3, invalidSignature)).call({
+            from: bob,
           }),
-          "revert",
-        );
+        "revert",
+      );
     });
 
     it("fails if the sender isn't the winner of this block", async () => {
-      await mint(token, {
-          [accounts[0]]: 100,
-          [accounts[1]]: 100,
-          [accounts[2]]: 100,
-      }, accounts);
-      await deposit(contract, accounts[0], 100);
-      await deposit(contract, accounts[1], 100);
-      await deposit(contract, accounts[2], 100);
-      let lastSignature = await contract.lastSignature();
-      let signature = web3.eth.sign(accounts[0], signatureToHex(lastSignature));
+      await setup(token, contract, {
+          [alice]: 100,
+          [bob]:   100,
+          [carol]: 100,
+      });
 
+      let blockHash = web3.utils.sha3("0x00");
+      let lastSignature = await contract.methods.lastSignature().call();
+      //
       // The winner of the first block in our tests is
-      // accounts[0] so signing with accounts[1] should fail
+      // alice so signing with bob should fail
+      let signature = await web3.eth.sign(signatureToHex(lastSignature), bob);
+
       await assert.isRejected(
-        contract.submitBlock.call(
-          dummyBlockHashes[0],
-          ...signatureToVRS(web3, signature), {
-            from: accounts[1],
+        contract.methods.submitBlock(
+          blockHash,
+          signatureToVRS(web3, signature)).call({
+            from: bob,
           }),
           "revert",
         );
     });
 
-    it.only("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {
-      await mint(token, {
-          [accounts[0]]: 1,
+    it("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {
+      await setup(token, contract, {
+        [alice]: 1,
       });
-      await deposit(contract, accounts[0], 1);
 
-      let winner = await contract.winner();
-      let lastSignature = await contract.lastSignature();
-      let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
+      let blockHash = web3.utils.sha3("0x00");
+      let winner = await contract.methods.winner().call();
+      let lastSignature = await contract.methods.lastSignature().call();
+      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
 
-      await contract.submitBlock(
-        dummyBlockHashes[0],
-        ...signatureToVRS(web3, signature), {
+      await contract.methods.submitBlock(
+        blockHash,
+        signatureToVRS(web3, signature)).send({
           from: winner,
         });
 
-      assert.equal(await contract.blockHash.call(), dummyBlockHashes[0]);
+      assert.equal(await contract.methods.blockHash().call(), blockHash);
     });
 
     it("sets `lastSignature` to the `signature` that was submitted", async () => {
-      await mint(token, {
-          [accounts[0]]: 1,
+      await setup(token, contract, {
+          [alice]: 1,
       });
-      await deposit(contract, accounts[0], 1);
 
-      let winner = await contract.winner();
-      let lastSignature = await contract.lastSignature();
-      let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
+      let blockHash = web3.utils.sha3("0x00");
+      let winner = await contract.methods.winner().call();
+      let lastSignature = await contract.methods.lastSignature().call();
+      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
 
-      await contract.submitBlock(
-        dummyBlockHashes[0],
-        ...signatureToVRS(web3, signature), {
+      await contract.methods.submitBlock(
+        blockHash,
+        signatureToVRS(web3, signature)).send({
           from: winner,
-        }
-      );
+        });
+
+      let {v, r, s} = await contract.methods.lastSignature().call()
 
       assert.deepEqual(
-        await contract.lastSignature(),
-        signatureToVRS(web3, signature),
+        [web3.utils.toBN(parseInt(v)), r, s],
+        signatureToVRS(web3, signature)
       );
     });
   });
 
   describe("#winner", () => {
     it("returns a random winner each staking round", async () => {
-      mint(token, {
-          [accounts[0]]: 100,
-          [accounts[1]]: 100,
-          [accounts[2]]: 100,
-      }, accounts);
-
-      await deposit(contract, accounts[0], 100);
-      await deposit(contract, accounts[1], 100);
-      await deposit(contract, accounts[2], 100);
-
-      let winners = await Promise.mapSeries(_.range(3), async () => {
-        let winner = await contract.winner();
-        let lastSignature = await contract.lastSignature();
-
-        let signature = web3.eth.sign(winner, signatureToHex(lastSignature));
-
-        await contract.submitBlock(
-          dummyBlockHashes[0],
-          ...signatureToVRS(web3, signature), {
-            from: winner,
-        });
-
-        return winner;
+      await setup(token, contract, {
+          [alice]: 100,
+          [bob]:   100,
+          [carol]: 100,
       });
 
-      assert.deepEqual(winners, [accounts[0], accounts[2], accounts[1]]);
+
+        let blockHash = web3.utils.sha3("0x00");
+        let winners = await Promise.mapSeries(_.range(3), async () => {
+          let winner = await contract.methods.winner().call();
+          let lastSignature = await contract.methods.lastSignature().call();
+
+          let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
+
+          await contract.methods.submitBlock(
+            blockHash,
+            signatureToVRS(web3, signature)).send({
+              from: winner,
+            });
+
+          return winner;
+        });
+
+        assert.deepEqual(winners, [alice, carol, bob]);
     });
   });
 });

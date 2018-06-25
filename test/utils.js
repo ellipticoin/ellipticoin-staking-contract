@@ -1,17 +1,73 @@
-const _ = require("lodash");
-const BigNumber = require('bignumber.js');
-const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
-const hexTobytes = (hex) => new Buffer(hex, "hex");
+import Web3 from "web3";
+import path from "path";
+import fs from "fs";
+import solc from "solc";
+import _ from "lodash";
+import BigNumber from "bignumber.js";
 
-const bytes64ToBytes32Array = (signature) => [
-  bytesToHex(signature.slice(0, 32)),
-  bytesToHex(signature.slice(32, 64)),
-]
+export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
+export const hexTobytes = (hex) => new Buffer(hex, "hex");
 
-const vmError = (message) =>
-  `VM Exception while processing transaction: ${message}`
+const defaultContractOptions = {
+  gasPrice: 100000000000,
+  gas: 4712388,
+}
 
-const assertFailure= async (assert, f, message) => {
+export async function deploy(web3, fileName, ...args) {
+    let [contract, bytecode] = await compile(web3, fileName, args)
+
+    return await contract.deploy({
+        data: bytecode,
+        arguments: args,
+    }).send();
+}
+
+export async function compile(web3, fileName, ...args) {
+    let baseName = path.basename(fileName);
+    let contractName = path.basename(fileName, ".sol");
+    let contractsDir = path.resolve(__dirname, "..", "contracts");
+    let content = fs.readFileSync(`/${contractsDir}/${fileName}`).toString();
+    let sources = {
+      [baseName]: content
+    };
+
+    const output = solc.compile({sources}, 1, (dependencyPath) => {
+      let contractsPath  = path.resolve(process.cwd(), "contracts", dependencyPath)
+      let npmPath  = path.resolve(process.cwd(), "node_modules", dependencyPath)
+      if(fs.existsSync(contractsPath)) {
+        return { contents: fs.readFileSync(contractsPath).toString() }
+      } else if(fs.existsSync(npmPath)) {
+        return { contents: fs.readFileSync(npmPath).toString() }
+      } else {
+        throw `${npmPath} not found in search path`;
+      }
+    });
+
+    if(output.errors) {
+      output.errors.forEach((message) => console.log(message));
+    };
+
+    let bytecode = output.contracts[`${baseName}:${contractName}`].bytecode
+    let {abi} = JSON.parse(output.contracts[`${baseName}:${contractName}`].metadata).output;
+    let accounts = await web3.eth.getAccounts();
+    return [await (new web3.eth.Contract(abi, {
+      ...defaultContractOptions,
+      from: accounts[0],
+    })), bytecode];
+}
+
+export function bytes64ToBytes32Array(signature) {
+  return [
+    bytesToHex(signature.slice(0, 32)),
+    bytesToHex(signature.slice(32, 64)),
+  ];
+}
+
+export function vmError(message) {
+  return `VM Exception while processing transaction: ${message}`;
+}
+
+export async function assertFailure(assert, f, message) {
   try {
     await f();
   } catch (e) {
@@ -20,39 +76,40 @@ const assertFailure= async (assert, f, message) => {
   assert.fail(null, null, `"${message}" never thrown`);
 }
 
-const mint = async (token, balances, accounts) => {
+export async function mint(token, balances, accounts) {
   return await Promise.all(_.map(balances, async (value, account) =>
     token.mint(account, value))
   );
-}
+};
 
-const signatureToHex = (signature) => {
+export function signatureToHex(signature) {
   return "0x" +
     signature[1].slice(2) +
     signature[2].slice(2) +
-    signature[0].toString(16) + "0"
+    _.padEnd(parseInt(signature[0]).toString(16), 2, "0");
 }
 
-const signatureToVRS = (web3, signature) =>
-  [
-    web3.toBigNumber(parseInt(signature.slice(130), 16) + 27),
+export function signatureToVRS(web3, signature) {
+  return [
+    web3.utils.toBN(parseInt(signature.slice(130), 16) + 27),
     `0x${signature.slice(2, 66)}`,
     `0x${signature.slice(66, 130)}`,
   ];
+}
 
-const callLastSignature = async (contract) =>
-  Buffer.concat([
+export async function callLastSignature(contract) {
+  return Buffer.concat([
     Buffer((await contract.lastSignature.call(0)).slice(2), "hex"),
     Buffer((await contract.lastSignature.call(1)).slice(2), "hex"),
-  ])
+  ]);
+}
 
-module.exports = {
-  assertFailure,
-  bytesToHex,
-  bytes64ToBytes32Array,
-  mint,
-  signatureToVRS,
-  signatureToHex,
-  callLastSignature,
-  vmError,
+export async function setup(token, contract, accounts) {
+  await Promise.all(_.map(accounts, async(value, from) => {
+      token.methods.mint(from, value).send();
+      await token.methods.approve(contract.options.address, value).send({
+        from
+      });
+      return await contract.methods.deposit(value).send({from});
+  }))
 }

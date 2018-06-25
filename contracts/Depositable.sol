@@ -12,6 +12,10 @@ contract Depositable is ArrayHelper {
     token = _token;
   }
 
+  function push() public {
+    addresses.push(msg.sender);
+  }
+
   function deposit(uint amount) public {
     require(token.balanceOf(msg.sender) >= amount);
     balances[msg.sender] += amount;

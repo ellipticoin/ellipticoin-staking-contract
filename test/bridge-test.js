@@ -1,100 +1,161 @@
-const _ = require("lodash");
-const Bridge = artifacts.require("./Bridge.sol");
-const TestToken = artifacts.require("./test/TestToken.sol");
-const {
-  assertFailure,
-  vmError,
-  mint,
-} = require("./utils.js");
+import 'babel-polyfill';
+import Web3 from "web3";
+import {
+  deploy
+} from "./utils";
+import chai from "chai";
+import chaiUseAsPromised from "chai-as-promised";
+chai.use(chaiUseAsPromised);
+const assert = chai.assert;
 
-const {
-  enter,
-} = require("./helpers/bridge.js");
-
-contract("Bridge", (accounts) => {
-  let alice = accounts[0];
-  let bob = accounts[1];
+describe("Bridge", (accounts) => {
   let contract;
+  let alice;
+  let bob;
   let token;
+  let web3;
 
   beforeEach(async () => {
-    token = await TestToken.new();
-    contract = await Bridge.new(token.address)
+    web3 = new Web3("http://localhost:8545");
+    token = await deploy(web3, "test/TestToken.sol");
+    contract = await deploy(web3, "Bridge.sol");
+    [alice, bob] = await web3.eth.getAccounts();
   });
 
   describe("#enter", () => {
     it("increases the users balance", async () => {
-      mint(token, {
-          [alice]: 2,
-      }, accounts);
+      token.methods.mint(alice, 2).send({
+        from: alice
+      });
 
-      await enter(contract, token, 2, alice);
+      await token.methods.approve(contract.options.address, 2).send({
+        from: alice
+      });
+      await contract.methods.enter(token.options.address, 2).send({
+        from: alice,
+      });
 
-      assert.equal(await contract.balanceOf(token.address, alice), 2);
+      assert.equal(await contract.methods.balanceOf(token.options.address, alice).call(), 2);
     });
   });
 
   describe("#transfer", () => {
     it("decreases the sender's balance", async () => {
-      mint(token, {
-          [alice]: 5,
-      }, accounts);
+      await token.methods.mint(alice, 5).send();
 
-      await enter(contract, token, 5, alice);
-      await contract.transfer(token.address, alice, bob, 2)
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
 
-      assert.equal(await contract.balanceOf(token.address, alice), 3);
-      assert.equal(await contract.balanceOf(token.address, bob), 2);
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.transfer(
+        token.options.address,
+        alice,
+        bob,
+        3
+      ).send();
+
+      assert.equal(await contract.methods.balanceOf(token.options.address, alice).call(), 2);
     });
 
     it("inreases the recipient's balance", async () => {
-      mint(token, {
-          [alice]: 5,
-      }, accounts);
+      await token.methods.mint(alice, 5).send();
 
-      await enter(contract, token, 5, alice);
-      await contract.transfer(token.address, alice, bob, 2)
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
 
-      assert.equal(await contract.balanceOf(token.address, bob), 2);
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.transfer(
+        token.options.address,
+        alice,
+        bob,
+        3
+      ).send();
+
+      assert.equal(await contract.methods.balanceOf(token.options.address, bob).call(), 3);
     });
 
     it("can only be called by the owner", async () => {
-      mint(token, {
-          [alice]: 5,
-      }, accounts);
+      await token.methods.mint(alice, 5).send();
 
-      await enter(contract, token, 5, alice);
-      await assertFailure(assert, () =>
-        contract.transfer(token.address, alice, bob, 2, {
+      await token.methods.approve(contract.options.address, 3).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 3).send({
+        from: alice,
+      });
+
+      await assert.isRejected(
+        contract.methods.transfer(
+          token.options.address,
+          alice,
+          bob,
+          3
+        ).send({
           from: bob,
-      }), vmError("revert"));
+        }),
+        "revert",
+      );
     });
   });
 
   describe("#exit", () => {
-    it("decreases the user's balance", async () => {
-      mint(token, {
-          [alice]: 5,
-      }, accounts);
+    it("decreases the user's balance in the bridge contract", async () => {
+      await token.methods.mint(alice, 5).send();
 
-      await enter(contract, token, 5, alice);
-      await contract.exit(token.address, alice, 2);
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
 
-      assert.equal(await contract.balanceOf(token.address, alice), 3);
-      assert.equal(await token.balanceOf(alice), 2);
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.exit(token.options.address, alice, 3).send();
+      assert.equal(await contract.methods.balanceOf(token.options.address, alice).call(), 2);
+    });
+
+    it("increase the user's token balance", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.exit(token.options.address, alice, 3).send();
+
+      assert.equal(await token.methods.balanceOf(alice).call(), 3);
     });
 
     it("can only be called by the owner", async () => {
-      mint(token, {
-          [alice]: 5,
-      }, accounts);
+      await token.methods.mint(alice, 5).send();
 
-      await enter(contract, token, 5, alice);
-      await assertFailure(assert, () =>
-        contract.exit(token.address, alice, 2, {
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await assert.isRejected(
+        contract.methods.exit(token.options.address, alice, 3).send({
           from: bob,
-        }), vmError("revert"));
+        }),
+        "revert"
+      );
     });
-
   });
 });
