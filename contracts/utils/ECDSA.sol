@@ -8,17 +8,17 @@ contract ECDSA {
     bytes32 s;
   }
 
-  function verifySignature(address _address, bytes _bytes, Signature signature) internal pure returns(bool) {
+  function verifySignature(address _address, bytes _bytes, string length, Signature signature) internal pure returns(bool) {
     return ecrecover(
-      signatureHash(_bytes),
+      signatureHash(_bytes, length),
       signature.v,
       signature.r,
       signature.s
     ) == _address;
   }
 
-  function signatureHash(bytes _bytes) internal pure returns (bytes32) {
-    bytes memory prefix = "\x19Ethereum Signed Message:\n65";
-    return keccak256(abi.encodePacked(prefix, _bytes));
+  function signatureHash(bytes _bytes, string length) internal pure returns (bytes32) {
+    bytes memory prefix = "\x19Ethereum Signed Message:\n";
+    return keccak256(abi.encodePacked(prefix, length, _bytes));
   }
 }

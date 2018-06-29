@@ -15,17 +15,24 @@ const assert = chai.assert;
 
 const {
   bytes64ToBytes32Array,
-  encodeSignature,
   bytesToHex,
-  mint,
-  signatureToVRS,
-  signatureToHex,
   callLastSignature,
-  expectThrow,
+  compile,
+  defaultContractOptions,
   deploy,
+  encodeSignature,
+  expectThrow,
+  mint,
   setup,
+  signatureToHex,
+  signatureToVRS,
+  transactionToHex,
 } = require("./utils.js");
 
+const TransactionTypes = {
+  Transfer: 0,
+  Exit: 1,
+}
 const randomSeed = new Buffer(32);
 
 describe("EllipitcoinStakingContract", (accounts) => {
@@ -89,6 +96,95 @@ describe("EllipitcoinStakingContract", (accounts) => {
           }),
           "revert",
         );
+    });
+
+    it("processes tranfers", async () => {
+      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
+      bridge.options.address = await contract.methods.bridge().call();
+
+      await setup(token, contract, {
+        [alice]: 1,
+      });
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(bridge.options.address, 5).send({
+        from: alice
+      });
+
+      await bridge.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      let blockHash = web3.utils.sha3("0x00");
+      let winner = await contract.methods.winner().call();
+      let lastSignature = await contract.methods.lastSignature().call();
+      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
+      let transaction = [
+        TransactionTypes.Transfer,
+        3,
+        token.options.address,
+        bob,
+      ]
+
+      transaction.push(signatureToVRS(web3, await web3.eth.sign(transactionToHex(transaction), alice)))
+      let message = transactionToHex(transaction);
+      let hashedMessage = await web3.utils.sha3(message);
+      let transactionSignature = await web3.eth.sign(message, alice);
+
+      await contract.methods.submitBlock(
+        blockHash,
+        [transaction],
+        signatureToVRS(web3, signature)).send({
+          from: winner,
+        });
+
+
+      assert.equal(await bridge.methods.balanceOf(token.options.address, alice).call(), 2);
+      assert.equal(await bridge.methods.balanceOf(token.options.address, bob).call(), 3);
+    });
+
+    it.only("processes exits", async () => {
+      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
+      bridge.options.address = await contract.methods.bridge().call();
+
+      await setup(token, contract, {
+        [alice]: 1,
+      });
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(bridge.options.address, 5).send({
+        from: alice
+      });
+
+      await bridge.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      let blockHash = web3.utils.sha3("0x00");
+      let winner = await contract.methods.winner().call();
+      let lastSignature = await contract.methods.lastSignature().call();
+      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
+      let transaction = [
+        TransactionTypes.Exit,
+        3,
+        token.options.address,
+        "0x0000000000000000000000000000000000000000",
+      ]
+
+      transaction.push(signatureToVRS(web3, await web3.eth.sign(transactionToHex(transaction), alice)))
+      let message = transactionToHex(transaction);
+      let hashedMessage = await web3.utils.sha3(message);
+      let transactionSignature = await web3.eth.sign(message, alice);
+
+      await contract.methods.submitBlock(
+        blockHash,
+        [transaction],
+        signatureToVRS(web3, signature)).send({
+          from: winner,
+        });
+
+      assert.equal(await bridge.methods.balanceOf(token.options.address, alice).call(), 2);
+      assert.equal(await token.methods.balanceOf(alice).call(), 3);
     });
 
     it("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {

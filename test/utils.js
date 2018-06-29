@@ -8,7 +8,7 @@ import BigNumber from "bignumber.js";
 export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
 export const hexTobytes = (hex) => new Buffer(hex, "hex");
 
-const defaultContractOptions = {
+export const defaultContractOptions = {
   gasPrice: 100000000000,
   gas: 4712388,
 }
@@ -50,6 +50,7 @@ export async function compile(web3, fileName, ...args) {
     let bytecode = output.contracts[`${baseName}:${contractName}`].bytecode
     let {abi} = JSON.parse(output.contracts[`${baseName}:${contractName}`].metadata).output;
     let accounts = await web3.eth.getAccounts();
+
     return [await (new web3.eth.Contract(abi, {
       ...defaultContractOptions,
       from: accounts[0],
@@ -95,6 +96,15 @@ export function signatureToVRS(web3, signature) {
     `0x${signature.slice(2, 66)}`,
     `0x${signature.slice(66, 130)}`,
   ];
+}
+
+export function transactionToHex(transaction) {
+  return "0x" +
+    transaction[0].toString(16).toLowerCase().padStart(64, "0") +
+    transaction[1].toString(16).toLowerCase().padStart(64, "0") +
+    transaction[2].slice(2).toLowerCase().padStart(64, "0") +
+    transaction[3].slice(2).toLowerCase().padStart(64, "0")
+
 }
 
 export async function callLastSignature(contract) {
