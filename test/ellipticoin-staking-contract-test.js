@@ -7,7 +7,6 @@
  */
 import Promise from "bluebird";
 import _ from "lodash";
-import Web3 from "web3";
 import chai from "chai";
 import chaiUseAsPromised from "chai-as-promised";
 chai.use(chaiUseAsPromised);
@@ -25,8 +24,9 @@ const {
   mint,
   setup,
   signatureToHex,
-  signatureToVRS,
+  hexToSignature,
   transactionToHex,
+  web3,
 } = require("./utils.js");
 
 const TransactionTypes = {
@@ -41,13 +41,10 @@ describe("EllipitcoinStakingContract", (accounts) => {
   let bob;
   let carol;
   let token;
-  let web3;
 
   beforeEach(async () => {
-    web3 = new Web3("http://localhost:8545");
-    token = await deploy(web3, "test/TestToken.sol");
+    token = await deploy("test/TestToken.sol");
     contract = await deploy(
-      web3,
       "EllipitcoinStakingContract.sol",
       token.options.address,
       bytesToHex(randomSeed)
@@ -67,7 +64,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          signatureToVRS(web3, invalidSignature)).call({
+          [],
+          hexToSignature(invalidSignature)).call({
             from: bob,
           }),
         "revert",
@@ -91,7 +89,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          signatureToVRS(web3, signature)).call({
+          [],
+          hexToSignature(signature)).call({
             from: bob,
           }),
           "revert",
@@ -99,7 +98,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
     });
 
     it("processes tranfers", async () => {
-      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
+      let [bridge, _bytecode] = await compile("Bridge.sol");
       bridge.options.address = await contract.methods.bridge().call();
 
       await setup(token, contract, {
@@ -126,7 +125,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         bob,
       ]
 
-      transaction.push(signatureToVRS(web3, await web3.eth.sign(transactionToHex(transaction), alice)))
+      transaction.push(hexToSignature(await web3.eth.sign(transactionToHex(transaction), alice)))
       let message = transactionToHex(transaction);
       let hashedMessage = await web3.utils.sha3(message);
       let transactionSignature = await web3.eth.sign(message, alice);
@@ -134,7 +133,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await contract.methods.submitBlock(
         blockHash,
         [transaction],
-        signatureToVRS(web3, signature)).send({
+        hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -143,8 +142,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
       assert.equal(await bridge.methods.balanceOf(token.options.address, bob).call(), 3);
     });
 
-    it.only("processes exits", async () => {
-      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
+    it("processes exits", async () => {
+      let [bridge, _bytecode] = await compile("Bridge.sol");
       bridge.options.address = await contract.methods.bridge().call();
 
       await setup(token, contract, {
@@ -171,7 +170,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         "0x0000000000000000000000000000000000000000",
       ]
 
-      transaction.push(signatureToVRS(web3, await web3.eth.sign(transactionToHex(transaction), alice)))
+      transaction.push(hexToSignature(await web3.eth.sign(transactionToHex(transaction), alice)))
       let message = transactionToHex(transaction);
       let hashedMessage = await web3.utils.sha3(message);
       let transactionSignature = await web3.eth.sign(message, alice);
@@ -179,7 +178,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await contract.methods.submitBlock(
         blockHash,
         [transaction],
-        signatureToVRS(web3, signature)).send({
+        hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -199,7 +198,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        signatureToVRS(web3, signature)).send({
+        [],
+        hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -218,7 +218,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        signatureToVRS(web3, signature)).send({
+        [],
+        hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -226,7 +227,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       assert.deepEqual(
         [web3.utils.toBN(parseInt(v)), r, s],
-        signatureToVRS(web3, signature)
+        hexToSignature(signature)
       );
     });
   });
@@ -249,7 +250,8 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
           await contract.methods.submitBlock(
             blockHash,
-            signatureToVRS(web3, signature)).send({
+            [],
+            hexToSignature(signature)).send({
               from: winner,
             });
 

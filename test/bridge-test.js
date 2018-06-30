@@ -1,7 +1,7 @@
 import 'babel-polyfill';
-import Web3 from "web3";
 import {
-  deploy
+  deploy,
+  web3,
 } from "./utils";
 import chai from "chai";
 import chaiUseAsPromised from "chai-as-promised";
@@ -13,12 +13,10 @@ describe("Bridge", (accounts) => {
   let alice;
   let bob;
   let token;
-  let web3;
 
   beforeEach(async () => {
-    web3 = new Web3("http://localhost:8545");
-    token = await deploy(web3, "test/TestToken.sol");
-    contract = await deploy(web3, "Bridge.sol");
+    token = await deploy("test/TestToken.sol");
+    contract = await deploy("Bridge.sol");
     [alice, bob] = await web3.eth.getAccounts();
   });
 

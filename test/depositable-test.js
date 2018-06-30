@@ -1,9 +1,9 @@
 import 'babel-polyfill';
-import Web3 from 'web3';
 import assert from 'assert';
 
 import {
-  deploy
+  deploy,
+  web3,
 } from "./utils";
 import _ from "lodash";
 
@@ -12,13 +12,11 @@ describe("Depositable", (accounts) => {
   let alice;
   let bob;
   let token;
-  let web3;
 
   beforeEach(async () => {
     let accounts;
-    web3 = new Web3("http://localhost:8545");
-    token = await deploy(web3, "test/TestToken.sol");
-    contract = await deploy(web3, "Depositable.sol", token.options.address);
+    token = await deploy("test/TestToken.sol");
+    contract = await deploy("Depositable.sol", token.options.address);
     [alice, bob] = await web3.eth.getAccounts();
   });
 

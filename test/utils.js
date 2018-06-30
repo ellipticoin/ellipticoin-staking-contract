@@ -7,14 +7,15 @@ import BigNumber from "bignumber.js";
 
 export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
 export const hexTobytes = (hex) => new Buffer(hex, "hex");
+export const web3 = new Web3("http://localhost:8545");
 
 export const defaultContractOptions = {
   gasPrice: 100000000000,
   gas: 4712388,
 }
 
-export async function deploy(web3, fileName, ...args) {
-    let [contract, bytecode] = await compile(web3, fileName, args)
+export async function deploy(fileName, ...args) {
+    let [contract, bytecode] = await compile(fileName, args)
 
     return await contract.deploy({
         data: bytecode,
@@ -22,7 +23,7 @@ export async function deploy(web3, fileName, ...args) {
     }).send();
 }
 
-export async function compile(web3, fileName, ...args) {
+export async function compile(fileName, ...args) {
     let baseName = path.basename(fileName);
     let contractName = path.basename(fileName, ".sol");
     let contractsDir = path.resolve(__dirname, "..", "contracts");
@@ -90,7 +91,7 @@ export function signatureToHex(signature) {
     _.padEnd(parseInt(signature[0]).toString(16), 2, "0");
 }
 
-export function signatureToVRS(web3, signature) {
+export function hexToSignature(signature) {
   return [
     web3.utils.toBN(parseInt(signature.slice(130), 16) + 27),
     `0x${signature.slice(2, 66)}`,
