@@ -6,16 +6,16 @@ import "./Bridge.sol";
 import "./utils/ECDSA.sol";
 
 contract EllipitcoinStakingContract is Depositable, ECDSA {
-  enum TransactionType {
-    Transfer,
-    Exit
-  }
-
-  struct Transaction {
-    TransactionType transactionType;
+  struct Transfer {
     uint amount;
     ERC20 token;
     address recipient;
+    Signature signature;
+  }
+
+  struct Exit {
+    uint amount;
+    ERC20 token;
     Signature signature;
   }
 
@@ -28,42 +28,52 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
     bridge = new Bridge();
   }
 
-  function submitBlock(bytes32 _blockHash, Transaction[] transacations, Signature signature) public {
+  function submitBlock(
+    bytes32 _blockHash,
+    Transfer[] transfers,
+    Exit[] exits,
+    Signature signature
+  ) public {
     require(msg.sender == winner());
     require(verifySignature(msg.sender, lastSignatureBytes(), "65", signature));
-    processTransactions(transacations);
+    processTransfers(transfers);
+    processExits(exits);
     blockHash = _blockHash;
     lastSignature = signature;
   }
 
-  function processTransactions(Transaction[] transacations) public {
-    for (uint i=0; i<transacations.length; i++) {
-      Transaction memory transaction = transacations[i];
+  function processTransfers(Transfer[] transfers) internal {
+    for (uint i=0; i<transfers.length; i++) {
+      Transfer memory transfer = transfers[i];
 
-      if(transaction.transactionType == TransactionType.Transfer) {
-        bridge.transfer(
-          transaction.token,
-          ecrecover(
-            signatureHash(transactionToBytes(transaction), "128"),
-            transaction.signature.v,
-            transaction.signature.r,
-            transaction.signature.s
-          ),
-          transaction.recipient,
-          transaction.amount
-        );
-      } else if (transaction.transactionType == TransactionType.Exit) {
-        bridge.exit(
-          transaction.token,
-          ecrecover(
-            signatureHash(transactionToBytes(transaction), "128"),
-            transaction.signature.v,
-            transaction.signature.r,
-            transaction.signature.s
-          ),
-          transaction.amount
-        );
-      }
+      bridge.transfer(
+        transfer.token,
+        ecrecover(
+          signatureHash(transferToBytes(transfer), "96"),
+          transfer.signature.v,
+          transfer.signature.r,
+          transfer.signature.s
+        ),
+        transfer.recipient,
+        transfer.amount
+      );
+    }
+  }
+
+  function processExits(Exit[] exits) internal {
+    for (uint i=0; i<exits.length; i++) {
+      Exit memory exit = exits[i];
+
+      bridge.exit(
+        exit.token,
+        ecrecover(
+          signatureHash(exitToBytes(exit), "64"),
+          exit.signature.v,
+          exit.signature.r,
+          exit.signature.s
+        ),
+        exit.amount
+      );
     }
   }
 
@@ -95,12 +105,18 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
     return byteArray;
   }
 
-  function transactionToBytes(Transaction transaction) public pure returns (bytes) {
+  function transferToBytes(Transfer transfer) public pure returns (bytes) {
     return abi.encode(
-      transaction.transactionType,
-      transaction.amount,
-      transaction.token,
-      transaction.recipient
+      transfer.amount,
+      transfer.token,
+      transfer.recipient
+    );
+  }
+
+  function exitToBytes(Exit exit) public pure returns (bytes) {
+    return abi.encode(
+      exit.amount,
+      exit.token
     );
   }
 }

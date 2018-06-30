@@ -99,13 +99,17 @@ export function hexToSignature(signature) {
   ];
 }
 
-export function transactionToHex(transaction) {
+export function transferToHex(transaction) {
   return "0x" +
     transaction[0].toString(16).toLowerCase().padStart(64, "0") +
-    transaction[1].toString(16).toLowerCase().padStart(64, "0") +
-    transaction[2].slice(2).toLowerCase().padStart(64, "0") +
-    transaction[3].slice(2).toLowerCase().padStart(64, "0")
+    transaction[1].slice(2).toLowerCase().padStart(64, "0") +
+    transaction[2].slice(2).toLowerCase().padStart(64, "0")
+}
 
+export function exitToHex(transaction) {
+  return "0x" +
+    transaction[0].toString(16).toLowerCase().padStart(64, "0") +
+    transaction[1].slice(2).toLowerCase().padStart(64, "0");
 }
 
 export async function callLastSignature(contract) {
