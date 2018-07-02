@@ -10,12 +10,14 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
     uint amount;
     ERC20 token;
     address recipient;
+    uint nonce;
     Signature signature;
   }
 
   struct Exit {
     uint amount;
     ERC20 token;
+    uint nonce;
     Signature signature;
   }
 
@@ -55,7 +57,8 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
           transfer.signature.s
         ),
         transfer.recipient,
-        transfer.amount
+        transfer.amount,
+        transfer.nonce
       );
     }
   }
@@ -72,7 +75,8 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
           exit.signature.r,
           exit.signature.s
         ),
-        exit.amount
+        exit.amount,
+        exit.nonce
       );
     }
   }

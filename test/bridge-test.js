@@ -21,7 +21,53 @@ describe("Bridge", (accounts) => {
   });
 
   describe("#enter", () => {
-    it("increases the users balance", async () => {
+    it("increments the senders nonce", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.transfer(
+        token.options.address,
+        alice,
+        bob,
+        3,
+        0
+      ).send();
+
+      assert.equal(await contract.methods.nonces(alice).call(), 1);
+    });
+
+    it("fails if the nonce is incorrect", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+
+      await assert.isRejected(
+        contract.methods.transfer(
+          token.options.address,
+          alice,
+          bob,
+          3,
+          1
+        ).send(),
+        "revert"
+      );
+    });
+
+    it("increases the user's balance", async () => {
       token.methods.mint(alice, 2).send({
         from: alice
       });
@@ -38,6 +84,52 @@ describe("Bridge", (accounts) => {
   });
 
   describe("#transfer", () => {
+    it("increments the senders nonce", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.transfer(
+        token.options.address,
+        alice,
+        bob,
+        3,
+        0
+      ).send();
+
+      assert.equal(await contract.methods.nonces(alice).call(), 1);
+    });
+
+    it("fails if the nonce is incorrect", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+
+      await assert.isRejected(
+        contract.methods.transfer(
+          token.options.address,
+          alice,
+          bob,
+          3,
+          1
+        ).send(),
+        "revert"
+      );
+    });
+
     it("decreases the sender's balance", async () => {
       await token.methods.mint(alice, 5).send();
 
@@ -53,7 +145,8 @@ describe("Bridge", (accounts) => {
         token.options.address,
         alice,
         bob,
-        3
+        3,
+        0
       ).send();
 
       assert.equal(await contract.methods.balanceOf(token.options.address, alice).call(), 2);
@@ -74,7 +167,8 @@ describe("Bridge", (accounts) => {
         token.options.address,
         alice,
         bob,
-        3
+        3,
+        0
       ).send();
 
       assert.equal(await contract.methods.balanceOf(token.options.address, bob).call(), 3);
@@ -96,7 +190,8 @@ describe("Bridge", (accounts) => {
           token.options.address,
           alice,
           bob,
-          3
+          3,
+          0
         ).send({
           from: bob,
         }),
@@ -106,6 +201,50 @@ describe("Bridge", (accounts) => {
   });
 
   describe("#exit", () => {
+    it("increments the recipients nonce", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+      await contract.methods.exit(
+        token.options.address,
+        alice,
+        3,
+        0
+      ).send();
+
+      assert.equal(await contract.methods.nonces(alice).call(), 1);
+    });
+
+    it("fails if the nonce is incorrect", async () => {
+      await token.methods.mint(alice, 5).send();
+
+      await token.methods.approve(contract.options.address, 5).send({
+        from: alice
+      });
+
+      await contract.methods.enter(token.options.address, 5).send({
+        from: alice,
+      });
+
+
+      await assert.isRejected(
+        contract.methods.exit(
+          token.options.address,
+          alice,
+          3,
+          1
+        ).send(),
+        "revert"
+      );
+    });
+
     it("decreases the user's balance in the bridge contract", async () => {
       await token.methods.mint(alice, 5).send();
 
@@ -117,7 +256,7 @@ describe("Bridge", (accounts) => {
         from: alice,
       });
 
-      await contract.methods.exit(token.options.address, alice, 3).send();
+      await contract.methods.exit(token.options.address, alice, 3, 0).send();
       assert.equal(await contract.methods.balanceOf(token.options.address, alice).call(), 2);
     });
 
@@ -132,7 +271,7 @@ describe("Bridge", (accounts) => {
         from: alice,
       });
 
-      await contract.methods.exit(token.options.address, alice, 3).send();
+      await contract.methods.exit(token.options.address, alice, 3, 0).send();
 
       assert.equal(await token.methods.balanceOf(alice).call(), 3);
     });
@@ -149,7 +288,7 @@ describe("Bridge", (accounts) => {
       });
 
       await assert.isRejected(
-        contract.methods.exit(token.options.address, alice, 3).send({
+        contract.methods.exit(token.options.address, alice, 3, 0).send({
           from: bob,
         }),
         "revert"

@@ -121,6 +121,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         3,
         token.options.address,
         bob,
+        0,
       ]
 
       let transferSignature = await web3.eth.sign(transferToHex(transfer), alice);
@@ -163,6 +164,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       let exit = [
         3,
         token.options.address,
+        0
       ]
 
       let exitSignature = await web3.eth.sign(exitToHex(exit), alice);
