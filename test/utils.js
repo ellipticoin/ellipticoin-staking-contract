@@ -14,6 +14,25 @@ export const defaultContractOptions = {
   gas: 4712388,
 }
 
+export function abiEncode(parameters) {
+  let parametersWithType = _.reduce(parameters, (result, value) => {
+      let type;
+
+      if(Number.isInteger(value)) {
+        type = "uint256";
+      } else {
+        type = "address";
+      }
+      result[0].push(type);
+      result[1].push(value.toString());
+
+      return result;
+    },
+    [[],[]]);
+
+  return web3.eth.abi.encodeParameters.apply(this, parametersWithType);
+}
+
 export async function deploy(fileName, ...args) {
     let [contract, bytecode] = await compile(fileName, args)
 
@@ -97,19 +116,6 @@ export function hexToSignature(signature) {
     `0x${signature.slice(2, 66)}`,
     `0x${signature.slice(66, 130)}`,
   ];
-}
-
-export function transferToHex(transaction) {
-  return "0x" +
-    transaction[0].toString(16).toLowerCase().padStart(64, "0") +
-    transaction[1].slice(2).toLowerCase().padStart(64, "0") +
-    transaction[2].slice(2).toLowerCase().padStart(64, "0")
-}
-
-export function exitToHex(transaction) {
-  return "0x" +
-    transaction[0].toString(16).toLowerCase().padStart(64, "0") +
-    transaction[1].slice(2).toLowerCase().padStart(64, "0");
 }
 
 export async function callLastSignature(contract) {

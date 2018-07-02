@@ -51,7 +51,7 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
       bridge.transfer(
         transfer.token,
         ecrecover(
-          signatureHash(transferToBytes(transfer), "96"),
+          signatureHash(transferToBytes(transfer), "128"),
           transfer.signature.v,
           transfer.signature.r,
           transfer.signature.s
@@ -70,7 +70,7 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
       bridge.exit(
         exit.token,
         ecrecover(
-          signatureHash(exitToBytes(exit), "64"),
+          signatureHash(exitToBytes(exit), "96"),
           exit.signature.v,
           exit.signature.r,
           exit.signature.s
@@ -113,14 +113,16 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
     return abi.encode(
       transfer.amount,
       transfer.token,
-      transfer.recipient
+      transfer.recipient,
+      transfer.nonce
     );
   }
 
   function exitToBytes(Exit exit) public pure returns (bytes) {
     return abi.encode(
       exit.amount,
-      exit.token
+      exit.token,
+      exit.nonce
     );
   }
 }

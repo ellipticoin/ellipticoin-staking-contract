@@ -13,6 +13,7 @@ chai.use(chaiUseAsPromised);
 const assert = chai.assert;
 
 const {
+  abiEncode,
   bytes64ToBytes32Array,
   bytesToHex,
   callLastSignature,
@@ -20,13 +21,11 @@ const {
   defaultContractOptions,
   deploy,
   encodeSignature,
-  exitToHex,
   expectThrow,
   hexToSignature,
   mint,
   setup,
   signatureToHex,
-  transferToHex,
   web3,
 } = require("./utils.js");
 
@@ -124,7 +123,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         0,
       ]
 
-      let transferSignature = await web3.eth.sign(transferToHex(transfer), alice);
+      let transferSignature = await web3.eth.sign(abiEncode(transfer), alice);
       transfer.push(hexToSignature(transferSignature));
 
       await contract.methods.submitBlock(
@@ -167,7 +166,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         0
       ]
 
-      let exitSignature = await web3.eth.sign(exitToHex(exit), alice);
+      let exitSignature = await web3.eth.sign(abiEncode(exit), alice);
       exit.push(hexToSignature(exitSignature));
 
       await contract.methods.submitBlock(
