@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js";
 
 export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
 export const hexTobytes = (hex) => new Buffer(hex, "hex");
-export const web3 = new Web3("http://localhost:8545");
+export const web3 = new Web3("ws://localhost:8545");
 
 export const defaultContractOptions = {
   gasPrice: 100000000000,
@@ -30,16 +30,18 @@ export function abiEncode(parameters) {
     },
     [[],[]]);
 
-  return web3.eth.abi.encodeParameters.apply(this, parametersWithType);
+  return web3.eth.abi.encodeParameters(...parametersWithType);
 }
 
 export async function deploy(fileName, ...args) {
     let [contract, bytecode] = await compile(fileName, args)
-
-    return await contract.deploy({
+    args = args || [];
+    let deployed  = await contract.deploy({
         data: bytecode,
         arguments: args,
     }).send();
+
+    return deployed;
 }
 
 export async function compile(fileName, ...args) {
@@ -68,7 +70,7 @@ export async function compile(fileName, ...args) {
     };
 
     let bytecode = output.contracts[`${baseName}:${contractName}`].bytecode
-    let {abi} = JSON.parse(output.contracts[`${baseName}:${contractName}`].metadata).output;
+    let abi = JSON.parse(output.contracts[`${baseName}:${contractName}`].interface);
     let accounts = await web3.eth.getAccounts();
 
     return [await (new web3.eth.Contract(abi, {
@@ -112,7 +114,7 @@ export function signatureToHex(signature) {
 
 export function hexToSignature(signature) {
   return [
-    web3.utils.toBN(parseInt(signature.slice(130), 16) + 27),
+    parseInt(signature.slice(130), 16) + 27,
     `0x${signature.slice(2, 66)}`,
     `0x${signature.slice(66, 130)}`,
   ];

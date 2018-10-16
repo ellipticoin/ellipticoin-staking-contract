@@ -223,7 +223,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       let {v, r, s} = await contract.methods.lastSignature().call()
 
       assert.deepEqual(
-        [web3.utils.toBN(parseInt(v)), r, s],
+        [parseInt(v), r, s],
         hexToSignature(signature)
       );
     });
