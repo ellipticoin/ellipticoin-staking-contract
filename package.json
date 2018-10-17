@@ -25,6 +25,7 @@
   "homepage": "https://github.com/ellipticoin/ellipticoin-staking-contract#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
+    "bignumber.js": "^7.2.1",
     "openzeppelin-solidity": "github:OpenZeppelin/openzeppelin-solidity#7a61371b19ff836e625a4087cf13c556691a7e34"
   },
   "devDependencies": {
