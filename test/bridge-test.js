@@ -1,8 +1,8 @@
 import 'babel-polyfill';
+import web3 from "./web3";
 import {
   deploy,
-  web3,
-} from "./utils";
+} from "../src/utils";
 import chai from "chai";
 import chaiUseAsPromised from "chai-as-promised";
 chai.use(chaiUseAsPromised);
@@ -15,8 +15,8 @@ describe("Bridge", (accounts) => {
   let token;
 
   beforeEach(async () => {
-    token = await deploy("test/TestToken.sol");
-    contract = await deploy("Bridge.sol");
+    token = await deploy(web3, "test/TestToken.sol");
+    contract = await deploy(web3, "Bridge.sol");
     [alice, bob] = await web3.eth.getAccounts();
   });
 

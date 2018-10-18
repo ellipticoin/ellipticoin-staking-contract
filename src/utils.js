@@ -1,20 +1,20 @@
-import Web3 from "web3";
 import path from "path";
 import fs from "fs";
 import solc from "solc";
 import _ from "lodash";
 import BigNumber from "bignumber.js";
+import Transaction from "ethereumjs-tx";
+import util from "ethereumjs-util";
 
 export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
 export const hexTobytes = (hex) => new Buffer(hex, "hex");
-export const web3 = new Web3("ws://localhost:8545");
 
 export const defaultContractOptions = {
   gasPrice: 100000000000,
-  gas: 4712388,
+  gasLimit: 4712388,
 }
 
-export function abiEncode(parameters) {
+export function abiEncode(web3, parameters) {
   let parametersWithType = _.reduce(parameters, (result, value) => {
       let type;
 
@@ -33,8 +33,8 @@ export function abiEncode(parameters) {
   return web3.eth.abi.encodeParameters(...parametersWithType);
 }
 
-export async function deploy(fileName, ...args) {
-    let [contract, bytecode] = await compile(fileName, args)
+export async function deploy(web3, fileName, ...args) {
+    let [contract, bytecode] = await compile(web3, fileName, args)
     args = args || [];
     let deployed  = await contract.deploy({
         data: bytecode,
@@ -44,7 +44,7 @@ export async function deploy(fileName, ...args) {
     return deployed;
 }
 
-export async function compile(fileName, ...args) {
+export async function compile(web3, fileName, ...args) {
     let baseName = path.basename(fileName);
     let contractName = path.basename(fileName, ".sol");
     let contractsDir = path.resolve(__dirname, "..", "contracts");
@@ -135,4 +135,30 @@ export async function setup(token, contract, accounts) {
       });
       return await contract.methods.deposit(value).send({from});
   }))
+}
+
+export async function submitTransaction(data, to = null, privateKey, web3) {
+  let address = "0x" + util.privateToAddress(privateKey).toString("hex");
+  let nonce = web3.utils.toHex(await web3.eth.getTransactionCount(address));
+  let tx;
+  if (to) {
+    tx = new Transaction({
+      to,
+      nonce,
+      gasPrice: web3.utils.toHex(defaultContractOptions.gasPrice),
+      gasLimit: web3.utils.toHex(defaultContractOptions.gasLimit),
+      data,
+    });
+  } else {
+    tx = new Transaction({
+      nonce,
+      gasPrice: web3.utils.toHex(defaultContractOptions.gasPrice),
+      gasLimit: web3.utils.toHex(defaultContractOptions.gasLimit),
+      data,
+    });
+  }
+   tx.sign(privateKey);
+   var serializedTx = tx.serialize();
+   return await web3.eth
+    .sendSignedTransaction("0x" + serializedTx.toString("hex"));
 }

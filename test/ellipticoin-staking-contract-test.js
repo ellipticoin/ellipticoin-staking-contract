@@ -5,6 +5,7 @@
  * 
  * `ganache-cli -m "medal junk auction menu dice pony version coyote grief dream dinosaur obscure"`
  */
+import web3 from "./web3";
 import Promise from "bluebird";
 import _ from "lodash";
 import chai from "chai";
@@ -26,8 +27,7 @@ const {
   mint,
   setup,
   signatureToHex,
-  web3,
-} = require("./utils.js");
+} = require("../src/utils.js");
 
 const randomSeed = new Buffer(32);
 
@@ -39,8 +39,9 @@ describe("EllipitcoinStakingContract", (accounts) => {
   let token;
 
   beforeEach(async () => {
-    token = await deploy("test/TestToken.sol");
+    token = await deploy(web3, "test/TestToken.sol");
     contract = await deploy(
+      web3,
       "EllipitcoinStakingContract.sol",
       token.options.address,
       bytesToHex(randomSeed)
@@ -96,7 +97,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
     });
 
     it("processes transfers", async () => {
-      let [bridge, _bytecode] = await compile("Bridge.sol");
+      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
       bridge.options.address = await contract.methods.bridge().call();
 
       await setup(token, contract, {
@@ -123,7 +124,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         0,
       ]
 
-      let transferSignature = await web3.eth.sign(abiEncode(transfer), alice);
+      let transferSignature = await web3.eth.sign(abiEncode(web3, transfer), alice);
       transfer.push(hexToSignature(transferSignature));
 
       await contract.methods.submitBlock(
@@ -140,7 +141,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
     });
 
     it("processes exits", async () => {
-      let [bridge, _bytecode] = await compile("Bridge.sol");
+      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
       bridge.options.address = await contract.methods.bridge().call();
 
       await setup(token, contract, {
@@ -166,7 +167,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
         0
       ]
 
-      let exitSignature = await web3.eth.sign(abiEncode(exit), alice);
+      let exitSignature = await web3.eth.sign(abiEncode(web3, exit), alice);
       exit.push(hexToSignature(exitSignature));
 
       await contract.methods.submitBlock(

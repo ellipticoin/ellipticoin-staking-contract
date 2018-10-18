@@ -25,7 +25,7 @@
   "homepage": "https://github.com/ellipticoin/ellipticoin-staking-contract#readme",
   "dependencies": {
     "@babel/runtime": "^7.1.2",
-    "openzeppelin-solidity": "github:OpenZeppelin/openzeppelin-solidity#7a61371b19ff836e625a4087cf13c556691a7e34"
+    "openzeppelin-solidity": "github:OpenZeppelin/openzeppelin-solidity"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
@@ -40,6 +40,7 @@
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
+    "ethereumjs-util": "^6.0.0",
     "lodash": "^4.17.10",
     "mocha": "^3.2.0",
     "solc": "^0.4.24",
