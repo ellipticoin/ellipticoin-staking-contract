@@ -61,8 +61,6 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          [],
-          [],
           hexToSignature(invalidSignature)).call({
             from: bob,
           }),
@@ -87,99 +85,11 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          [],
-          [],
           hexToSignature(signature)).call({
             from: bob,
           }),
           "revert",
         );
-    });
-
-    it("processes transfers", async () => {
-      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
-      bridge.options.address = await contract.methods.bridge().call();
-
-      await setup(token, contract, {
-        [alice]: 1,
-      });
-      await token.methods.mint(alice, 5).send();
-
-      await token.methods.approve(bridge.options.address, 5).send({
-        from: alice
-      });
-
-      await bridge.methods.enter(token.options.address, 5).send({
-        from: alice,
-      });
-
-      let blockHash = web3.utils.sha3("0x00");
-      let winner = await contract.methods.winner().call();
-      let lastSignature = await contract.methods.lastSignature().call();
-      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
-      let transfer = [
-        3,
-        token.options.address,
-        bob,
-        0,
-      ]
-
-      let transferSignature = await web3.eth.sign(abiEncode(web3, transfer), alice);
-      transfer.push(hexToSignature(transferSignature));
-
-      await contract.methods.submitBlock(
-        blockHash,
-        [transfer],
-        [],
-        hexToSignature(signature)).send({
-          from: winner,
-        });
-
-
-      assert.equal(await bridge.methods.balanceOf(token.options.address, alice).call(), 2);
-      assert.equal(await bridge.methods.balanceOf(token.options.address, bob).call(), 3);
-    });
-
-    it("processes exits", async () => {
-      let [bridge, _bytecode] = await compile(web3, "Bridge.sol");
-      bridge.options.address = await contract.methods.bridge().call();
-
-      await setup(token, contract, {
-        [alice]: 1,
-      });
-      await token.methods.mint(alice, 5).send();
-
-      await token.methods.approve(bridge.options.address, 5).send({
-        from: alice
-      });
-
-      await bridge.methods.enter(token.options.address, 5).send({
-        from: alice,
-      });
-
-      let blockHash = web3.utils.sha3("0x00");
-      let winner = await contract.methods.winner().call();
-      let lastSignature = await contract.methods.lastSignature().call();
-      let signature = await web3.eth.sign(signatureToHex(lastSignature), winner);
-      let exit = [
-        3,
-        token.options.address,
-        0
-      ]
-
-      let exitSignature = await web3.eth.sign(abiEncode(web3, exit), alice);
-      exit.push(hexToSignature(exitSignature));
-
-      await contract.methods.submitBlock(
-        blockHash,
-        [],
-        [exit],
-        hexToSignature(signature)).send({
-          from: winner,
-        });
-
-      assert.equal(await bridge.methods.balanceOf(token.options.address, alice).call(), 2);
-      assert.equal(await token.methods.balanceOf(alice).call(), 3);
     });
 
     it("sets `lastestBlockHash` to the `blockHash` that was submitted", async () => {
@@ -194,8 +104,6 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        [],
-        [],
         hexToSignature(signature)).send({
           from: winner,
         });
@@ -215,8 +123,6 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        [],
-        [],
         hexToSignature(signature)).send({
           from: winner,
         });
@@ -248,8 +154,6 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
           await contract.methods.submitBlock(
             blockHash,
-            [],
-            [],
             hexToSignature(signature)).send({
               from: winner,
             });

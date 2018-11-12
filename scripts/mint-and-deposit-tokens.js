@@ -11,9 +11,9 @@ const web3 = new Web3(process.env.WEB3_URL);
 const fs = require("fs");
 const privateKey = new Buffer(process.env.PRIVATE_KEY, "hex");
 const blacksmithPrivateKeys = process.env.BLACKSMITH_PRIVATE_KEYS.split(",").map((key) => new Buffer(key, "hex"));
-const stakingContractAddress = "0x02343b1aC4e60d5b5e655fc249e45871544EA14f";
+const stakingContractAddress = "0x5D00cDb13faB0D5802A82904e841D0E3eE2b6065";
 const stakingContractABIFilename = "dist/EllipitcoinStakingContract.abi";
-const tokenContractAddress = "0xA1FB77a212419bfE1B58E906DC39993823b424EC";
+const tokenContractAddress = "0x573a5dDd00f0BcFb6Ee41138E8f67f97B707C9f5";
 const tokenContractABIFilename = "dist/TestnetToken.abi";
 const amount = 100 * (10 ** 3);
 
@@ -32,7 +32,7 @@ async function run() {
     await submitTransaction(tokenContract.methods.approve(stakingContractAddress, amount).encodeABI(), tokenContractAddress, privateKey, web3);
     await tokenContract.methods.allowance(address, stakingContractAddress).call();
     await stakingContract.methods.token().call();
-    await submitTransaction(stakingContract.methods.deposit(amount).encodeABI(), stakingContractAddress, privateKey, web3);
+    let result = await submitTransaction(stakingContract.methods.deposit(amount).encodeABI(), stakingContractAddress, privateKey, web3);
     console.log(`Deposited ${amount / (10 **3)} tokens into ${address}`);
   });
 }
