@@ -1,10 +1,9 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Depositable.sol";
 import "./utils/ECDSA.sol";
 
-contract EllipitcoinStakingContract is Depositable, ECDSA {
+contract EllipticoinStakingContract is Depositable, ECDSA {
   bytes32 public blockHash;
   Signature public lastSignature;
 
@@ -14,8 +13,11 @@ contract EllipitcoinStakingContract is Depositable, ECDSA {
 
   function submitBlock(
     bytes32 _blockHash,
-    Signature signature
+    uint8 v,
+    bytes32 r,
+    bytes32 s
   ) public {
+    Signature memory signature = Signature(v, r, s);
     require(msg.sender == winner());
     require(verifySignature(msg.sender, lastSignatureBytes(), "65", signature));
     blockHash = _blockHash;

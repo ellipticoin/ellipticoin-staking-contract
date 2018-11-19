@@ -11,9 +11,9 @@ const web3 = new Web3(process.env.WEB3_URL);
 const fs = require("fs");
 const privateKey = new Buffer(process.env.PRIVATE_KEY, "hex");
 const blacksmithPrivateKeys = process.env.BLACKSMITH_PRIVATE_KEYS.split(",").map((key) => new Buffer(key, "hex"));
-const stakingContractAddress = "0x5D00cDb13faB0D5802A82904e841D0E3eE2b6065";
+const stakingContractAddress = "0x374d622428a60293Ba0E46eABf4e82480e055827";
 const stakingContractABIFilename = "dist/EllipitcoinStakingContract.abi";
-const tokenContractAddress = "0x573a5dDd00f0BcFb6Ee41138E8f67f97B707C9f5";
+const tokenContractAddress = "0xF8CADdFC462a7e211e95dbA22bdD8a40eE77EFe5";
 const tokenContractABIFilename = "dist/TestnetToken.abi";
 const amount = 100 * (10 ** 3);
 

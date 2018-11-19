@@ -10,10 +10,10 @@ const Transaction = require('ethereumjs-tx');
 const web3 = new Web3(process.env.WEB3_URL);
 const fs = require("fs");
 var mkdirp = require('mkdirp');
-const tokenAddress = "0x573a5dDd00f0BcFb6Ee41138E8f67f97B707C9f5";
+const tokenAddress = "0xF8CADdFC462a7e211e95dbA22bdD8a40eE77EFe5";
 const randomSeed = web3.utils.randomHex(32);
 const privateKey = new Buffer(process.env.PRIVATE_KEY, "hex");
-const contractFileName = "EllipitcoinStakingContract.sol";
+const contractFileName = "EllipticoinStakingContract.sol";
 const distPath = "./dist";
 
 let address = "0x" + util.privateToAddress(privateKey).toString("hex");

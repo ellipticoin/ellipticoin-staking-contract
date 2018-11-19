@@ -31,7 +31,7 @@ const {
 
 const randomSeed = new Buffer(32);
 
-describe("EllipitcoinStakingContract", (accounts) => {
+describe("EllipticoinStakingContract", (accounts) => {
   let contract;
   let alice;
   let bob;
@@ -42,7 +42,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
     token = await deploy(web3, "test/TestToken.sol");
     contract = await deploy(
       web3,
-      "EllipitcoinStakingContract.sol",
+      "EllipticoinStakingContract.sol",
       token.options.address,
       bytesToHex(randomSeed)
     );
@@ -61,7 +61,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          hexToSignature(invalidSignature)).call({
+          ...hexToSignature(invalidSignature)).call({
             from: bob,
           }),
         "revert",
@@ -85,7 +85,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
       await assert.isRejected(
         contract.methods.submitBlock(
           blockHash,
-          hexToSignature(signature)).call({
+          ...hexToSignature(signature)).call({
             from: bob,
           }),
           "revert",
@@ -104,7 +104,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        hexToSignature(signature)).send({
+        ...hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -123,7 +123,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
       await contract.methods.submitBlock(
         blockHash,
-        hexToSignature(signature)).send({
+        ...hexToSignature(signature)).send({
           from: winner,
         });
 
@@ -154,7 +154,7 @@ describe("EllipitcoinStakingContract", (accounts) => {
 
           await contract.methods.submitBlock(
             blockHash,
-            hexToSignature(signature)).send({
+            ...hexToSignature(signature)).send({
               from: winner,
             });
 
