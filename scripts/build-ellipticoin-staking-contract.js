@@ -24,9 +24,10 @@ let address = "0x" + util.privateToAddress(privateKey).toString("hex");
   const bytecodeFileName = contractFileName.substr(0, contractFileName.lastIndexOf(".")) + ".hex";
   const abiFileName = contractFileName.substr(0, contractFileName.lastIndexOf(".")) + ".abi";
 
-  console.log(JSON.stringify(contract._jsonInterface))
   fs.writeFileSync(`${distPath}/${bytecodeFileName}`, bytecode);
+  console.log(`Wrote ${distPath}/${bytecodeFileName}`)
   fs.writeFileSync(`${distPath}/${abiFileName}`, JSON.stringify(contract._jsonInterface));
+  console.log(`Wrote ${distPath}/${abiFileName}`)
 }
 
 run();

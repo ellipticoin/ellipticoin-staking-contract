@@ -7,7 +7,7 @@ contract TestnetToken is ERC20Detailed, ERC20Mintable {
   ERC20Detailed(name, symbol, decimals)
   public {}
    // Allow anyone to mint testnet tokens
-  function isMinter(address account) public view returns (bool) {
+  function isMinter(address /* account */) public view returns (bool) {
     return true;
   }
 }
