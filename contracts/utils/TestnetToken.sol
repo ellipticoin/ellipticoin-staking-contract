@@ -1,9 +1,9 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol";
 
 contract TestnetToken is ERC20Detailed, ERC20Mintable {
-  constructor(string name, string symbol, uint8 decimals)
+  constructor(string memory name, string memory symbol, uint8 decimals)
   ERC20Detailed(name, symbol, decimals)
   public {}
    // Allow anyone to mint testnet tokens

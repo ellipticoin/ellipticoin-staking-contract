@@ -1,31 +1,30 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Depositable.sol";
+import "./RSAPublicModuliRegistry.sol";
 import "./utils/ECDSA.sol";
 
-contract EllipticoinStakingContract is Depositable, ECDSA {
+contract EllipticoinStakingContract is Depositable, ECDSA, RSAPublicModuliRegistry {
   bytes32 public blockHash;
-  Signature public lastSignature;
+  uint public n;
+  bytes public lastSignature;
 
-  constructor(ERC20 _token, bytes32 randomSeed) Depositable(_token) public {
-    lastSignature = Signature(0, randomSeed, randomSeed);
+  constructor(ERC20 _token, bytes memory randomSeed) Depositable(_token) public {
+    lastSignature = randomSeed;
   }
 
   function submitBlock(
     bytes32 _blockHash,
-    uint8 v,
-    bytes32 r,
-    bytes32 s
+    bytes memory signature
   ) public {
-    Signature memory signature = Signature(v, r, s);
     require(msg.sender == winner());
-    require(verifySignature(msg.sender, lastSignatureBytes(), "65", signature));
+    require(verifyRSASignature(lastSignature, signature, msg.sender));
     blockHash = _blockHash;
     lastSignature = signature;
   }
 
   function winner() public view returns (address) {
-    uint randomUint = lastSignature.v + (uint(lastSignature.r) + uint(lastSignature.s));
+    uint randomUint = bytesToUint(lastSignature);
     uint winningValue = randomUint % totalStake();
     uint value = 0;
     uint i = 0;
@@ -37,18 +36,14 @@ contract EllipticoinStakingContract is Depositable, ECDSA {
     return addresses[i - 1];
   }
 
-  function lastSignatureBytes() public view returns(bytes) {
-    return signatureToBytes(lastSignature);
-  }
+  function bytesToUint(bytes memory _bytes) public pure returns (uint256) {
+    require(_bytes.length >= 32);
+    uint256 tempUint;
 
-  function signatureToBytes(Signature signature) internal pure returns (bytes){
-    bytes memory byteArray;
-    byteArray = new bytes(65);
-    for(uint i=0; i < 32; i++){
-      byteArray[i] = signature.r[i];
-      byteArray[i+32] = signature.s[i];
+    assembly {
+      tempUint := mload(add(_bytes, 0x20))
     }
-    byteArray[64] = byte(signature.v);
-    return byteArray;
+
+    return tempUint;
   }
 }

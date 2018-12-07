@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 contract ECDSA {
   struct Signature {
@@ -7,7 +7,7 @@ contract ECDSA {
     bytes32 s;
   }
 
-  function verifySignature(address _address, bytes _bytes, string length, Signature signature) internal pure returns(bool) {
+  function verifySignature(address _address, bytes memory _bytes, string memory length, Signature memory signature) internal pure returns(bool) {
     return ecrecover(
       signatureHash(_bytes, length),
       signature.v,
@@ -16,7 +16,7 @@ contract ECDSA {
     ) == _address;
   }
 
-  function signatureHash(bytes _bytes, string length) internal pure returns (bytes32) {
+  function signatureHash(bytes memory _bytes, string memory length) internal pure returns (bytes32) {
     bytes memory prefix = "\x19Ethereum Signed Message:\n";
     return keccak256(abi.encodePacked(prefix, length, _bytes));
   }

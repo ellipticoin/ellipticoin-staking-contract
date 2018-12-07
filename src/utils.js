@@ -1,13 +1,16 @@
+import Promise from "bluebird";
 import path from "path";
 import fs from "fs";
+import solcLinker from 'solc/linker';
 import solc from "solc";
 import _ from "lodash";
 import BigNumber from "bignumber.js";
 import Transaction from "ethereumjs-tx";
 import util from "ethereumjs-util";
+import { generatePrivateKey, createPrivateKey } from "ursa";
 
 export const bytesToHex = (bytes) => `0x${bytes.toString("hex")}`;
-export const hexTobytes = (hex) => new Buffer(hex, "hex");
+export const hexToBytes = (hex) => new Buffer(hex.substring(2), "hex");
 
 export const defaultContractOptions = {
   gasPrice: 100000000000,
@@ -34,26 +37,39 @@ export function abiEncode(web3, parameters) {
 }
 
 export async function deploy(web3, fileName, ...args) {
-    let [contract, bytecode] = await compile(web3, fileName, args)
+    let [contract, bytecode] = await compile(web3, fileName)
     args = args || [];
+  // console.log(args);
     let deployed  = await contract.deploy({
-        data: bytecode,
-        arguments: args,
+        data: "0x00",
+        arguments: [],
     }).send();
 
     return deployed;
 }
 
-export async function compile(web3, fileName, ...args) {
+export async function compile(web3, fileName) {
     let baseName = path.basename(fileName);
     let contractName = path.basename(fileName, ".sol");
     let contractsDir = path.resolve(__dirname, "..", "contracts");
     let content = fs.readFileSync(`/${contractsDir}/${fileName}`).toString();
     let sources = {
-      [baseName]: content
+      [baseName]: {content}
     };
+    var input = {
+      language: 'Solidity',
+      sources,
+      settings: {
+        outputSelection: {
+          '*': {
+            '*': [ '*' ]
+          }
+        }
+      }
+    }
 
-    const output = solc.compile({sources}, 1, (dependencyPath) => {
+
+    function findImports (dependencyPath) {
       let contractsPath  = path.resolve(process.cwd(), "contracts", dependencyPath)
       let npmPath  = path.resolve(process.cwd(), "node_modules", dependencyPath)
       if(fs.existsSync(contractsPath)) {
@@ -63,14 +79,44 @@ export async function compile(web3, fileName, ...args) {
       } else {
         throw `${npmPath} not found in search path`;
       }
-    });
+    }
+    const output = solc.compile(JSON.stringify(input), findImports);
 
-    if(output.errors) {
-      output.errors.forEach((message) => console.log(message));
+    if(JSON.parse(output).errors) {
+      JSON.parse(output).errors.forEach(({formattedMessage}) => console.error(formattedMessage));
     };
 
-    let bytecode = output.contracts[`${baseName}:${contractName}`].bytecode
-    let abi = JSON.parse(output.contracts[`${baseName}:${contractName}`].interface);
+
+    let bytecode = JSON.parse(output).contracts[baseName][contractName].evm.bytecode.object
+    let linkReferences = JSON.parse(output).contracts[baseName][contractName].evm.bytecode.linkReferences
+    for(let fileName in linkReferences){
+      let baseName = path.basename(fileName);
+      let contractName = path.basename(fileName, ".sol");
+      let contractsDir = path.resolve(__dirname, "..", "contracts");
+      let content = fs.readFileSync(`/${contractsDir}/${fileName}`).toString();
+      let sources = {
+        [baseName]: {content}
+      };
+      let libraryName = Object.keys(linkReferences[fileName])[0];
+      var input = {
+        language: 'Solidity',
+        sources,
+        settings: {
+          outputSelection: {
+            '*': {
+              '*': [ '*' ]
+            }
+          }
+        }
+      }
+      const output = solc.compile(JSON.stringify(input), findImports);
+      let libraryBytecode = JSON.parse(output).contracts[baseName][contractName].evm.bytecode.object
+      console.log({ [libraryName]: libraryBytecode })
+      bytecode = solcLinker.linkBytecode(bytecode, { [libraryName]: libraryBytecode })
+    }
+    console.log(bytecode);
+
+    let abi = JSON.parse(output).contracts[baseName][contractName].abi;
     let accounts = await web3.eth.getAccounts();
 
     return [await (new web3.eth.Contract(abi, {
@@ -112,6 +158,15 @@ export function signatureToHex(signature) {
     _.padEnd(parseInt(signature[0]).toString(16), 2, "0");
 }
 
+export function signatureToBytes(signature) {
+  return Buffer.from(
+    signature[1].slice(2) +
+    signature[2].slice(2) +
+    _.padEnd(parseInt(signature[0]).toString(16), 2, "0"),
+    "hex"
+  );
+}
+
 export function hexToSignature(signature) {
   return [
     parseInt(signature.slice(130), 16) + 27,
@@ -127,14 +182,29 @@ export async function callLastSignature(contract) {
   ]);
 }
 
+export async function registerPublicModuli(contract, accounts) {
+  const contents = fs.readFileSync('test/support/test_private_keys.txt', 'utf8');
+  const privateKeys = contents.trim().split("\n\n").map((pem) => createPrivateKey(pem));
+  await Promise.all(accounts.map(async(account, i) =>{
+      await contract.setRSAPublicModulus(
+        privateKeys[i].getModulus(),
+        {
+          from: account
+        },
+  )}
+  ));
+
+  return _.zipObject(accounts, privateKeys);
+}
+
 export async function setup(token, contract, accounts) {
-  await Promise.all(_.map(accounts, async(value, from) => {
-      token.methods.mint(from, value).send();
-      await token.methods.approve(contract.options.address, value).send({
+  await Promise.mapSeries(accounts, async([from, value]) => {
+      await token.mint(from, value);
+      await token.approve(contract.address, value, {
         from
       });
-      return await contract.methods.deposit(value).send({from});
-  }))
+      return await contract.deposit(value, {from});
+  });
 }
 
 export async function submitTransaction(data, to = null, privateKey, web3) {

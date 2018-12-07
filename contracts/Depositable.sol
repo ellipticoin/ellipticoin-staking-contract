@@ -1,5 +1,4 @@
-pragma solidity ^0.4.23;
-
+pragma solidity ^0.5.0;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./utils/ArrayHelper.sol";
 
@@ -20,14 +19,14 @@ contract Depositable is ArrayHelper {
     require(token.balanceOf(msg.sender) >= amount);
     balances[msg.sender] += amount;
     addresses.push(msg.sender);
-    token.transferFrom(msg.sender, this, amount);
+    token.transferFrom(msg.sender, address(this), amount);
   }
 
   function withdraw(uint amount) public {
     require(balances[msg.sender] >= amount);
     balances[msg.sender] -= amount;
-    token.approve(this, amount);
-    token.transferFrom(this, msg.sender, amount);
+    token.approve(address(this), amount);
+    token.transferFrom(address(this), msg.sender, amount);
 
     if(balances[msg.sender] == 0) {
       addresses = removeValue(addresses, msg.sender);
